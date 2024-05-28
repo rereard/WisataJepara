@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1000704501254",
+    "project_id": "wisata-jepara-422517",
+    "storage_bucket": "wisata-jepara-422517.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1000704501254:android:f660dabe9c32d9ee878587",
+        "android_client_info": {
+          "package_name": "com.wisatajepara"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBf0BGL7a5d2SOQoDSkJWnd0z4yq0teON4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
