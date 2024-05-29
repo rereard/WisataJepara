@@ -39,8 +39,8 @@ export default function EditObjekWisata({ route, navigation }) {
   const [samePrice, setSamePrice] = useState(data?.samePrice ? data?.samePrice : Array.from({ length: 7 }, () => ({ same: true })));
   const [openTimePicker, setOpenTimePicker] = useState(Array.from({ length: 7 }, () => ({ open: false })))
   const [closeTimePicker, setCloseTimePicker] = useState(Array.from({ length: 7 }, () => ({ open: false })))
-  const [openEveryday, setOpenEveryday] = useState(data?.jamBuka ? data?.jamBuka?.every(item => item.buka !== "" && item?.tutup !== "") || data?.jamBuka?.every(item => item.buka === "" && item?.tutup === "") : true)
-  const [samePriceDaily, setsamePriceDaily] = useState(data?.htm ? data?.htm?.every(item => item?.dewasa === item?.anak) && data?.htm?.every(item => item?.dewasa !== "" && item?.anak !== "") : true);
+  const [openEveryday, setOpenEveryday] = useState(data?.jamBuka ? data?.jamBuka?.every(item => item.buka === data?.jamBuka[0]?.buka && item?.tutup === data?.jamBuka[0]?.tutup) || data?.jamBuka?.every(item => item.buka === "" && item?.tutup === "") : true)
+  const [samePriceDaily, setsamePriceDaily] = useState(data?.htm ? data?.htm?.every(item => item?.dewasa === data?.htm[0].dewasa && item?.anak === data?.htm[0].anak) && data?.htm?.every(item => item?.dewasa !== "" && item?.anak !== "") : true);
   const [region, setRegion] = useState({
     latitude: -6.5811218,
     longitude: 110.6872181,
@@ -126,12 +126,12 @@ export default function EditObjekWisata({ route, navigation }) {
     const options = type === 'camera' ? {
       mediaType: 'photo',
       includeExtra,
-      quality: 0.7,
+      quality: 0.6,
     } : {
       selectionLimit: 1,
       mediaType: 'photo',
       includeExtra,
-      quality: 0.7
+      quality: 0.6
     };
     if (type === 'camera') {
       launchCamera(options, (res) => {
@@ -343,7 +343,9 @@ export default function EditObjekWisata({ route, navigation }) {
               )}
             />
             <Text style={{ color: colors.black, fontSize: 16, fontWeight: '700', marginTop: 10, }}>Foto</Text>
-            <Text style={{ color: colors.black, fontSize: 16, marginTop: 5, }}>Foto yang dipakai:</Text>
+            {imageTrash.length !== 0 && (
+              <Text style={{ color: colors.black, fontSize: 16, marginTop: 5, }}>Foto yang dipakai:</Text>
+            )}
             <ScrollView
               style={{
                 marginTop: 10,

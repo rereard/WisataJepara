@@ -5,6 +5,7 @@ import { useRef, useState, useEffect } from "react";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MapView, { Marker } from "react-native-maps";
 import firestore from '@react-native-firebase/firestore';
+import Spinner from "react-native-loading-spinner-overlay";
 const { width, height } = Dimensions.get('window')
 const SCREEN_HEIGHT = height
 const SCREEN_WIDTH = width
@@ -28,6 +29,7 @@ export default function AddNode({ navigation, route }) {
   const [mapScreen, setMapScreen] = useState(false)
   const [latitude, setLatitude] = useState(null)
   const [longitude, setLongitude] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [region, setRegion] = useState({
     latitude: -6.5811218,
     longitude: 110.6872181,
@@ -116,19 +118,48 @@ export default function AddNode({ navigation, route }) {
           ]}
         >
           {dataNode?.map(item => (
-            item?.tipe == 2 &&
-            <Marker
-              identifier={item?.id}
-              key={item?.id}
-              title={item?.nama}
-              coordinate={({
-                latitude: item?.latitude,
-                longitude: item?.longitude,
-              })}
-              tracksViewChanges={false}
-            >
-              <NodeMarker />
-            </Marker>
+            item?.tipe == 2 ?
+              <Marker
+                identifier={item?.id}
+                key={item?.id}
+                title={item?.nama}
+                coordinate={({
+                  latitude: item?.latitude,
+                  longitude: item?.longitude,
+                })}
+                tracksViewChanges={false}
+              >
+                <NodeMarker />
+              </Marker>
+              :
+              <Marker
+                identifier={item?.id}
+                key={item?.id}
+                coordinate={({
+                  latitude: item?.latitude,
+                  longitude: item?.longitude,
+                })}
+                tracksViewChanges={false}
+              >
+                <View style={{
+                  width: 100,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Text style={{
+                    color: colors.black,
+                    fontWeight: '900',
+                    fontSize: 10,
+                    textAlign: 'center'
+                  }}>{item?.nama}</Text>
+                  <Ionicons name={'location-sharp'}
+                    style={{
+                      fontSize: 40,
+                      color: colors.darkBlue
+                    }}
+                  />
+                </View>
+              </Marker>
           ))}
         </MapView>
         <View
@@ -208,6 +239,10 @@ export default function AddNode({ navigation, route }) {
             flex: 1
           }}
         >
+          <Spinner
+            visible={loading}
+            textContent="Loading..."
+          />
           <View
             style={{
               marginBottom: 20,
@@ -299,6 +334,7 @@ export default function AddNode({ navigation, route }) {
                 }}
                 onPress={() => {
                   if (node !== '') {
+                    setLoading(true)
                     firestore().collection('node').add({
                       nama: node,
                       latitude: latitude,
@@ -310,6 +346,8 @@ export default function AddNode({ navigation, route }) {
                     }).catch(e => {
                       console.log(e);
                       ToastAndroid.show('Gagal menambahkan data', ToastAndroid.SHORT)
+                    }).finally(() => {
+                      setLoading(false)
                     })
                   } else {
                     ToastAndroid.show('Nama node tidak boleh kosong', ToastAndroid.SHORT)

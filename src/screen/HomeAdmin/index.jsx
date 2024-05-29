@@ -156,7 +156,7 @@ export default function HomeAdmin({ route, navigation }) {
 
 
   const snapPoints = useMemo(() => ["20%", "30%", "40%", "50%", '60%', "75%"], []);
-  const snapPointsRoute = useMemo(() => ["20%", "30%", "40%", "50%"], []);
+  const snapPointsRoute = useMemo(() => ["20%", "30%", "40%", "50%", "60%", "70%", "80%"], []);
   const snapPointsItem = useMemo(() => ["25%", "50%", "75"], []);
 
   const handleSheetChanges = useCallback((index) => {
@@ -721,155 +721,195 @@ export default function HomeAdmin({ route, navigation }) {
           style={styles.contentContainer}
           index={0}
         >
-          <BottomSheetScrollView
-            contentContainerStyle={{
-              paddingBottom: 25
-            }}
-          >
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: "space-between",
-              marginBottom: 10
-            }}>
-              <View
-                style={{
-                  flex: 1
-                }}
-              >
-                <Text style={{
-                  fontWeight: '900',
-                  color: colors.green,
-                  fontSize: 17,
-                  marginBottom: 4,
-                }}>
-                  {dataNode?.find(item => item?.id === pressNodeId)?.nama}
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: 50,
-                  alignItems: 'center'
-                }}
-              >
-                <Ionicons
-                  name={"chevron-forward-outline"}
-                  style={{ color: colors.red, fontSize: 30 }}
-                />
-                <Text
-                  style={{
-                    color: colors.red,
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {dijkstraPoly?.distance} m
-                </Text>
-              </View>
-              <View
-                style={{
-                  flex: 1,
-                  alignItems: 'flex-end'
-                }}
-              >
-                <Text style={{
-                  fontWeight: '900',
-                  color: colors.purple,
-                  fontSize: 17,
-                  marginBottom: 4,
-                }}>
-                  {dataNode?.find(item => item?.id === pressId)?.nama}
-                </Text>
-              </View>
+          <BottomSheetView style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: "space-between",
+            marginBottom: 10
+          }}>
+            <View
+              style={{
+                flex: 1
+              }}
+            >
+              <Text style={{
+                fontWeight: '900',
+                color: colors.green,
+                fontSize: 17,
+                marginBottom: 4,
+              }}>
+                {dataNode?.find(item => item?.id === pressNodeId)?.nama}
+              </Text>
             </View>
             <View
               style={{
-                marginBottom: 15
+                width: 50,
+                alignItems: 'center'
               }}
             >
-              {dijkstraPoly?.edges?.map(item => (
-                <TouchableOpacity
-                  key={item}
-                  style={{
-                    paddingVertical: 12,
-                    borderBottomWidth: 2,
-                    borderColor: 'rgba(196, 196, 196, 0.5)',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    alignContent: 'flex-end'
-                  }}
-                  onPress={() => {
-                    setPressGraphId(item)
-                    const graphRegion = dataGraf?.find(i => i?.id === item)?.region
-                    _map.current?.animateToRegion(graphRegion, 1000)
-                    bottomSheetRouteRef.current?.snapToIndex(0)
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.black,
-                      fontWeight: 'bold',
-                      fontSize: 14,
-                      flex: 1
-                    }}
-                  >
-                    {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item)?.startNodeId)?.nama} - {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item)?.finalNodeId)?.nama}
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.black,
-                      fontWeight: 'bold',
-                      fontSize: 14,
-                      // flex: 1
-                    }}
-                  >
-                    {dataGraf?.find(i => i?.id === item)?.jarak} m
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.red,
-                borderRadius: 15,
-                alignItems: 'center',
-                paddingVertical: 10,
-                flex: 1,
-                shadowColor: "#000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5,
-                marginVertical: 10
-              }}
-              onPress={() => {
-                setChooseMode(false)
-                handleSnapItemPress(1)
-                setPressNodeId(null)
-                setDijkstraPoly(null)
-                setPressGraphId(null)
-                _map.current?.animateToRegion({
-                  latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
-                  longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
-                  latitudeDelta: 0.003,
-                  longitudeDelta: 0.003
-                }, 1000)
-              }}
-            >
+              <Ionicons
+                name={"chevron-forward-outline"}
+                style={{ color: colors.red, fontSize: 30 }}
+              />
               <Text
                 style={{
-                  color: colors.white,
-                  fontSize: 15,
-                  fontWeight: '700',
+                  color: colors.red,
+                  fontWeight: 'bold'
                 }}
               >
-                Kembali
+                {dijkstraPoly?.distance} m
               </Text>
-            </TouchableOpacity>
-          </BottomSheetScrollView>
+            </View>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'flex-end'
+              }}
+            >
+              <Text style={{
+                fontWeight: '900',
+                color: colors.purple,
+                fontSize: 17,
+                marginBottom: 4,
+              }}>
+                {dataNode?.find(item => item?.id === pressId)?.nama}
+              </Text>
+            </View>
+          </BottomSheetView>
+          <View
+            style={{
+              marginBottom: 7,
+              flex: 1
+            }}
+          >
+            {dijkstraPoly && (
+              <FlatList
+                data={dijkstraPoly?.edges}
+                renderItem={(item) => (
+                  <TouchableOpacity
+                    key={item.item}
+                    style={{
+                      paddingVertical: 12,
+                      borderBottomWidth: 2,
+                      borderColor: 'rgba(196, 196, 196, 0.5)',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      alignContent: 'flex-end'
+                    }}
+                    onPress={() => {
+                      setPressGraphId(item.item)
+                      const graphRegion = dataGraf?.find(i => i?.id === item.item)?.region
+                      _map.current?.animateToRegion(graphRegion, 1000)
+                      bottomSheetRouteRef.current?.snapToIndex(0)
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.black,
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        flex: 1
+                      }}
+                    >
+                      {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item.item)?.startNodeId)?.nama} - {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item.item)?.finalNodeId)?.nama}
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.black,
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        // flex: 1
+                      }}
+                    >
+                      {dataGraf?.find(i => i?.id === item.item)?.jarak} m
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+            {/* {dijkstraPoly?.edges?.map(item => (
+              <TouchableOpacity
+                key={item}
+                style={{
+                  paddingVertical: 12,
+                  borderBottomWidth: 2,
+                  borderColor: 'rgba(196, 196, 196, 0.5)',
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  alignContent: 'flex-end'
+                }}
+                onPress={() => {
+                  setPressGraphId(item)
+                  const graphRegion = dataGraf?.find(i => i?.id === item)?.region
+                  _map.current?.animateToRegion(graphRegion, 1000)
+                  bottomSheetRouteRef.current?.snapToIndex(0)
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.black,
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    flex: 1
+                  }}
+                >
+                  {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item)?.startNodeId)?.nama} - {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item)?.finalNodeId)?.nama}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.black,
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    // flex: 1
+                  }}
+                >
+                  {dataGraf?.find(i => i?.id === item)?.jarak} m
+                </Text>
+              </TouchableOpacity>
+            ))} */}
+          </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.red,
+              borderRadius: 15,
+              alignItems: 'center',
+              paddingVertical: 10,
+              shadowColor: "#000",
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              marginVertical: 10
+            }}
+            onPress={() => {
+              setChooseMode(false)
+              handleSnapItemPress(1)
+              setPressNodeId(null)
+              setDijkstraPoly(null)
+              setPressGraphId(null)
+              _map.current?.animateToRegion({
+                latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
+                longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
+                latitudeDelta: 0.003,
+                longitudeDelta: 0.003
+              }, 1000)
+            }}
+          >
+            <Text
+              style={{
+                color: colors.white,
+                fontSize: 15,
+                fontWeight: '700',
+              }}
+            >
+              Kembali
+            </Text>
+          </TouchableOpacity>
         </BottomSheet>
       )}
       {pressId ? (
@@ -1103,7 +1143,11 @@ export default function HomeAdmin({ route, navigation }) {
                             fontSize: 16,
                           }}
                         >
-                          Rp {formatIDR.format(item?.dewasa).replace('IDR', '').trim()}
+                          {item?.dewasa === '0' ? (
+                            'Gratis'
+                          ) : (
+                            `Rp ${formatIDR.format(item?.dewasa).replace('IDR', '').trim()}`
+                          )}
                         </Text>
                       ) : (
                         <>
@@ -1113,7 +1157,11 @@ export default function HomeAdmin({ route, navigation }) {
                               fontSize: 16,
                             }}
                           >
-                            Rp {formatIDR.format(item?.dewasa).replace('IDR', '').trim()} (Dewasa)
+                            {item?.dewasa === '0' ? (
+                              'Gratis'
+                            ) : (
+                              `Rp ${formatIDR.format(item?.dewasa).replace('IDR', '').trim()} (Dewasa)`
+                            )}
                           </Text>
                           <Text
                             style={{
@@ -1121,7 +1169,11 @@ export default function HomeAdmin({ route, navigation }) {
                               fontSize: 16,
                             }}
                           >
-                            Rp {formatIDR.format(item?.anak).replace('IDR', '').trim()} (Anak-anak)
+                            {item?.dewasa === '0' ? (
+                              'Gratis'
+                            ) : (
+                              `Rp ${formatIDR.format(item?.anak).replace('IDR', '').trim()} (Anak-anak)`
+                            )}
                           </Text>
                         </>
                       )}

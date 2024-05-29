@@ -68,7 +68,7 @@ export default function Home({ route, navigation }) {
 
   const snapPoints = useMemo(() => ["20%", "30%", "40%", "50%", '60%', "75%"], []);
   const snapPointsItem = useMemo(() => ["25%", "50%", "75", "100%"], []);
-  const snapPointsRoute = useMemo(() => ["20%", "30%", "40%", "50%", "60%"], []);
+  const snapPointsRoute = useMemo(() => ["20%", "30%", "40%", "50%", "60%", "70%", "80%"], []);
 
   useEffect(() => {
     console.log("filtered objek", filteredObjekWisata);
@@ -620,7 +620,11 @@ export default function Home({ route, navigation }) {
                             fontSize: 16,
                           }}
                         >
-                          Rp {formatIDR.format(item?.dewasa).replace('IDR', '').trim()}
+                          {item?.dewasa === '0' ? (
+                            'Gratis'
+                          ) : (
+                            `Rp ${formatIDR.format(item?.dewasa).replace('IDR', '').trim()}`
+                          )}
                         </Text>
                       ) : (
                         <>
@@ -630,7 +634,11 @@ export default function Home({ route, navigation }) {
                               fontSize: 16,
                             }}
                           >
-                            Rp {formatIDR.format(item?.dewasa).replace('IDR', '').trim()} (Dewasa)
+                            {item?.dewasa === '0' ? (
+                              'Gratis'
+                            ) : (
+                              `Rp ${formatIDR.format(item?.dewasa).replace('IDR', '').trim()} (Dewasa)`
+                            )}
                           </Text>
                           <Text
                             style={{
@@ -638,7 +646,11 @@ export default function Home({ route, navigation }) {
                               fontSize: 16,
                             }}
                           >
-                            Rp {formatIDR.format(item?.anak).replace('IDR', '').trim()} (Anak-anak)
+                            {item?.dewasa === '0' ? (
+                              'Gratis'
+                            ) : (
+                              `Rp ${formatIDR.format(item?.anak).replace('IDR', '').trim()} (Anak-anak)`
+                            )}
                           </Text>
                         </>
                       )}
@@ -879,7 +891,96 @@ export default function Home({ route, navigation }) {
               </Text>
             </View>
           </BottomSheetView>
-          <BottomSheetScrollView
+          <View style={{ flex: 1, marginBottom: 7 }}>
+            {dijkstraPoly && (
+              <FlatList
+                data={dijkstraPoly?.edges}
+                renderItem={item => (
+                  <TouchableOpacity
+                    key={item.item}
+                    style={{
+                      paddingVertical: 12,
+                      borderBottomWidth: 2,
+                      borderColor: 'rgba(196, 196, 196, 0.5)',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      alignContent: 'flex-end'
+                    }}
+                    onPress={() => {
+                      setPressGraphId(item.item)
+                      const graphRegion = dataGraf?.find(i => i?.id === item.item)?.region
+                      _map.current?.animateToRegion(graphRegion, 1000)
+                      bottomSheetRouteRef.current?.snapToIndex(0)
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.black,
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        flex: 1
+                      }}
+                    >
+                      {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item.item)?.startNodeId)?.nama} - {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item.item)?.finalNodeId)?.nama}
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.black,
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        // flex: 1
+                      }}
+                    >
+                      {dataGraf?.find(i => i?.id === item.item)?.jarak} m
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.red,
+              borderRadius: 15,
+              alignItems: 'center',
+              paddingVertical: 10,
+              shadowColor: "#000",
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              marginVertical: 10
+            }}
+            onPress={() => {
+              setChooseMode(false)
+              bottomSheetItemRef.current?.snapToIndex(1)
+              setPressNodeId(null)
+              setDijkstraPoly(null)
+              setCurrentGrafNodes(null)
+              setPressGraphId(null)
+              _map.current?.animateToRegion({
+                latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
+                longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
+                latitudeDelta: 0.003,
+                longitudeDelta: 0.003
+              }, 1000)
+            }}
+          >
+            <Text
+              style={{
+                color: colors.white,
+                fontSize: 15,
+                fontWeight: '700',
+              }}
+            >
+              Kembali
+            </Text>
+          </TouchableOpacity>
+          {/* <BottomSheetScrollView
             contentContainerStyle={{
               paddingBottom: 25
             }}
@@ -973,7 +1074,7 @@ export default function Home({ route, navigation }) {
                 Kembali
               </Text>
             </TouchableOpacity>
-          </BottomSheetScrollView>
+          </BottomSheetScrollView> */}
         </BottomSheet>
       )}
       {(chooseMode && !dijkstraPoly) && (

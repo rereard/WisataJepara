@@ -111,12 +111,12 @@ export default function AddObjekWisata({ navigation }) {
     const options = type === 'camera' ? {
       mediaType: 'photo',
       includeExtra,
-      quality: 0.7,
+      quality: 0.6,
     } : {
       selectionLimit: 1,
       mediaType: 'photo',
       includeExtra,
-      quality: 0.7
+      quality: 0.6
     };
     if (type === 'camera') {
       launchCamera(options, (res) => {
