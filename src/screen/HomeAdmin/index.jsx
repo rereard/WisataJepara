@@ -9,7 +9,7 @@ import { colors } from "../../utility/colors";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import firestore from '@react-native-firebase/firestore';
-import { ScrollView, TextInput } from "react-native-gesture-handler";
+import { FlatList, ScrollView, TextInput } from "react-native-gesture-handler";
 import { decode } from "@googlemaps/polyline-codec";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from '@react-navigation/stack';
@@ -129,7 +129,6 @@ export default function HomeAdmin({ route, navigation }) {
         polylineSet.add(pair1);
       }
     })
-    console.log("filteredPoly", filteredPolylines);
     setFilterReversiblePolyline(filteredPolylines)
   }, [dataGraf]);
 
@@ -1177,114 +1176,182 @@ export default function HomeAdmin({ route, navigation }) {
 function ObjekWisataScreen({ data, setRegion, handleClosePress, handleSnapItemPress, setPressid, setSearchObjek, setFilteredObjekWisata, searchObjek, filteredObjekWisata, setLoading, navigation, _map, bottomSheetRef, loading }) {
   const [isModalVisible, setModalVisible] = useState(false);
   const [id, setId] = useState("");
-  return (
-    <View style={{ backgroundColor: colors.white, flex: 1 }}>
-      <ModalLongPress
-        isVisible={isModalVisible}
-        setIsVisible={setModalVisible}
-        data={id !== "" && data?.find((i => i?.id === id))}
-        setLoading={setLoading}
-        navigation={navigation}
-      />
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.white
-      }}>
-        <View style={{ flex: 1 }}>
-          <TextInput
-            style={{
-              borderRadius: 10,
-              paddingLeft: 15,
-              paddingRight: 40,
-              paddingVertical: 10,
-              color: colors.black,
-              backgroundColor: colors.white,
-              borderWidth: 1,
-              borderColor: colors.darkGrey,
+  if (!loading) {
+    return (
+      <View style={{ backgroundColor: colors.white, flex: 1 }}>
+        <ModalLongPress
+          isVisible={isModalVisible}
+          setIsVisible={setModalVisible}
+          data={id !== "" && data?.find((i => i?.id === id))}
+          setLoading={setLoading}
+          navigation={navigation}
+        />
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.white,
+          paddingBottom: 10
+        }}>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={{
+                borderRadius: 10,
+                paddingLeft: 15,
+                paddingRight: 40,
+                paddingVertical: 10,
+                color: colors.black,
+                backgroundColor: colors.white,
+                borderWidth: 1,
+                borderColor: colors.darkGrey,
 
-            }}
-            placeholder="Cari Objek Wisata"
-            placeholderTextColor={colors.darkGrey}
-            onChangeText={value => {
-              setSearchObjek(value)
-              const dataObjek = data?.filter(item => item?.tipe === 1)
-              const filterData = dataObjek?.filter(item => item?.nama?.toLowerCase().includes(value.toLowerCase()))
-              setFilteredObjekWisata(filterData)
-            }}
-            value={searchObjek}
-          />
-          <Ionicons name={'search-sharp'}
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              fontSize: 20,
-              padding: 14,
-              color: colors.darkGrey,
-            }}
-          />
+              }}
+              placeholder="Cari Objek Wisata"
+              placeholderTextColor={colors.darkGrey}
+              onChangeText={value => {
+                setSearchObjek(value)
+                const dataObjek = data?.filter(item => item?.tipe === 1)
+                const filterData = dataObjek?.filter(item => item?.nama?.toLowerCase().includes(value.toLowerCase()))
+                setFilteredObjekWisata(filterData)
+              }}
+              value={searchObjek}
+            />
+            <Ionicons name={'search-sharp'}
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                fontSize: 20,
+                padding: 14,
+                color: colors.darkGrey,
+              }}
+            />
+          </View>
         </View>
-      </View>
-      <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
-        {filteredObjekWisata?.map(item => (
-          item?.tipe == 1 &&
-          <Pressable
-            key={item?.id}
-            onPress={() => {
-              // setRegion({
-              //   latitude: item?.latitude,
-              //   longitude: item?.longitude,
-              //   latitudeDelta: 0.002,
-              //   longitudeDelta: 0.002,
-              // });
-              _map.current?.animateToRegion({
-                latitude: item?.latitude,
-                longitude: item?.longitude,
-                latitudeDelta: 0.002,
-                longitudeDelta: 0.002,
-              }, 1000)
-              // handleClosePress();
-              // handleSnapItemPress(0);
-              setPressid(item?.id)
-              bottomSheetRef.current?.snapToIndex(0)
-            }}
-            onLongPress={() => {
-              setModalVisible(true)
-              setId(item?.id)
-            }}
-          >
-            <View style={styles.itemContainer}>
-              {item?.foto && item?.foto?.length !== 0 ? (
-                <Image
-                  source={{
-                    uri: item?.foto[0]?.uri,
+        <View style={{ flex: 1, marginBottom: 10 }}>
+          {filteredObjekWisata && (
+            <FlatList
+              data={filteredObjekWisata?.filter(item => item?.tipe === 1)}
+              renderItem={(item) => (
+                <Pressable
+                  key={item?.item.id}
+                  onPress={() => {
+                    console.log(item.item.foto);
+                    console.log(_map.current);
+                    // setRegion({
+                    //   latitude: item?.latitude,
+                    //   longitude: item?.longitude,
+                    //   latitudeDelta: 0.002,
+                    //   longitudeDelta: 0.002,
+                    // });
+                    // handleClosePress();
+                    // handleSnapItemPress(0);
+                    setPressid(item?.item.id)
+                    bottomSheetRef.current?.snapToIndex(0)
+                    if (_map.current) {
+                      console.log("this should done");
+                      _map.current?.animateToRegion({
+                        latitude: item?.item.latitude,
+                        longitude: item?.item.longitude,
+                        latitudeDelta: 0.002,
+                        longitudeDelta: 0.002,
+                      }, 1000)
+                    }
                   }}
-                  style={{ width: 50, height: 50, marginRight: 6 }}
-                />
-              ) : (
-                <Image
-                  source={{
-                    uri: "https://www.its.ac.id/tmesin/wp-content/uploads/sites/22/2022/07/no-image.png",
+                  onLongPress={() => {
+                    setModalVisible(true)
+                    setId(item?.item.id)
                   }}
-                  style={{ width: 50, height: 50, marginRight: 6 }}
-                />
+                >
+                  <View style={styles.itemContainer}>
+                    {item?.item.foto && item?.item.foto?.length !== 0 ? (
+                      <Image
+                        source={{
+                          uri: item.item.foto[0].uri,
+                        }}
+                        style={{ width: 50, height: 50, marginRight: 6 }}
+                      />
+                    ) : (
+                      <Image
+                        source={{
+                          uri: "https://www.its.ac.id/tmesin/wp-content/uploads/sites/22/2022/07/no-image.png",
+                        }}
+                        style={{ width: 50, height: 50, marginRight: 6 }}
+                      />
+                    )}
+                    <View style={{
+                      justifyContent: 'center'
+                    }}>
+                      <Text style={styles.textJudul}>{item?.item.nama}</Text>
+                      <Text style={{
+                        fontSize: 13,
+                        color: colors.black,
+                      }}>{item?.item.alamat ? item?.item.alamat : "Belum ada alamat"}</Text>
+                    </View>
+                  </View>
+                </Pressable>
               )}
-              <View style={{
-                justifyContent: 'center'
-              }}>
-                <Text style={styles.textJudul}>{item?.nama}</Text>
-                <Text style={{
-                  fontSize: 13,
-                  color: colors.black,
-                }}>{item?.alamat ? item?.alamat : "Belum ada alamat"}</Text>
+            />
+          )}
+        </View>
+
+        {/* {filteredObjekWisata?.map(item => (
+            item?.tipe == 1 &&
+            <Pressable
+              key={item?.id}
+              onPress={() => {
+                // setRegion({
+                //   latitude: item?.latitude,
+                //   longitude: item?.longitude,
+                //   latitudeDelta: 0.002,
+                //   longitudeDelta: 0.002,
+                // });
+                _map.current?.animateToRegion({
+                  latitude: item?.latitude,
+                  longitude: item?.longitude,
+                  latitudeDelta: 0.002,
+                  longitudeDelta: 0.002,
+                }, 1000)
+                // handleClosePress();
+                // handleSnapItemPress(0);
+                setPressid(item?.id)
+                bottomSheetRef.current?.snapToIndex(0)
+              }}
+              onLongPress={() => {
+                setModalVisible(true)
+                setId(item?.id)
+              }}
+            >
+              <View style={styles.itemContainer}>
+                {item?.foto && item?.foto?.length !== 0 ? (
+                  <Image
+                    source={{
+                      uri: item?.foto[0]?.uri,
+                    }}
+                    style={{ width: 50, height: 50, marginRight: 6 }}
+                  />
+                ) : (
+                  <Image
+                    source={{
+                      uri: "https://www.its.ac.id/tmesin/wp-content/uploads/sites/22/2022/07/no-image.png",
+                    }}
+                    style={{ width: 50, height: 50, marginRight: 6 }}
+                  />
+                )}
+                <View style={{
+                  justifyContent: 'center'
+                }}>
+                  <Text style={styles.textJudul}>{item?.nama}</Text>
+                  <Text style={{
+                    fontSize: 13,
+                    color: colors.black,
+                  }}>{item?.alamat ? item?.alamat : "Belum ada alamat"}</Text>
+                </View>
               </View>
-            </View>
-          </Pressable>
-        ))}
-      </BottomSheetScrollView>
-    </View>
-  );
+            </Pressable>
+          ))} */}
+      </View>
+    );
+  }
 }
 
 function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRef, setPressNodeId, _map, setFilteredNode, filteredNode, loading, setLoading, navigation }) {
@@ -1304,7 +1371,8 @@ function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRe
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.white
+        backgroundColor: colors.white,
+        paddingBottom: 10
       }}>
         <View style={{ flex: 1 }}>
           <TextInput
@@ -1341,7 +1409,47 @@ function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRe
           />
         </View>
       </View>
-      <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
+      <View style={{ flex: 1, marginBottom: 10 }}>
+        {filteredNode && (
+          <FlatList
+            data={filteredNode?.filter(item => item?.tipe === 2)}
+            renderItem={(item) => (
+              <Pressable
+                key={item?.item.id}
+                onPress={() => {
+                  // setRegion({
+                  //   latitude: item?.latitude,
+                  //   longitude: item?.longitude,
+                  //   latitudeDelta: 0.002,
+                  //   longitudeDelta: 0.002,
+                  // });
+                  _map.current?.animateToRegion({
+                    latitude: item?.item.latitude,
+                    longitude: item?.item.longitude,
+                    latitudeDelta: 0.002,
+                    longitudeDelta: 0.002,
+                  }, 1000)
+                  handleSnapPress(0);
+                  setPressNodeId(item?.item.id);
+                }}
+                onLongPress={() => {
+                  setModalVisible(true)
+                  setId(item?.item.id)
+                }}
+              >
+                <View style={styles.itemContainer}>
+                  <View style={{
+                    justifyContent: 'center'
+                  }}>
+                    <Text style={styles.textJudul}>{item?.item.nama}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            )}
+          />
+        )}
+      </View>
+      {/* <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
         {filteredNode?.map(item => (
           item?.tipe == 2 &&
           <Pressable
@@ -1376,7 +1484,7 @@ function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRe
             </View>
           </Pressable>
         ))}
-      </BottomSheetScrollView>
+      </BottomSheetScrollView> */}
     </View>
   );
 }
@@ -1388,7 +1496,8 @@ function GrafScreen({ data, setRegion, dataNode, handleSnapPress, _map, setPress
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.white
+        backgroundColor: colors.white,
+        paddingBottom: 10
       }}>
         <View style={{ flex: 1 }}>
           <TextInput
@@ -1424,7 +1533,43 @@ function GrafScreen({ data, setRegion, dataNode, handleSnapPress, _map, setPress
           />
         </View>
       </View>
-      <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
+      <View style={{ flex: 1, marginBottom: 10 }}>
+        {filteredGraph && (
+          <FlatList
+            data={filteredGraph}
+            renderItem={(item => (
+              <Pressable
+                key={item?.item.id}
+                onPress={() => {
+                  // setRegion({
+                  //   latitude: item?.region?.latitude,
+                  //   longitude: item?.region?.longitude,
+                  //   latitudeDelta: item?.region?.latitudeDelta,
+                  //   longitudeDelta: item?.region?.longitudeDelta,
+                  // });
+                  _map.current?.animateToRegion({
+                    latitude: item?.item.region?.latitude,
+                    longitude: item?.item.region?.longitude,
+                    latitudeDelta: item?.item.region?.latitudeDelta,
+                    longitudeDelta: item?.item.region?.longitudeDelta,
+                  }, 1000)
+                  bottomSheetRef?.current?.close();
+                  setPressGraphId(item?.item.id)
+                }}
+              >
+                <View style={styles.itemContainer}>
+                  <View style={{
+                    justifyContent: 'center'
+                  }}>
+                    <Text style={styles.textJudul}>{dataNode?.find(i => i?.id === item?.item.startNodeId)?.nama} - {dataNode?.find(i => i?.id === item?.item.finalNodeId)?.nama}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          />
+        )}
+      </View>
+      {/* <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
         {filteredGraph?.map(item => (
           <Pressable
             key={item?.id}
@@ -1454,7 +1599,7 @@ function GrafScreen({ data, setRegion, dataNode, handleSnapPress, _map, setPress
             </View>
           </Pressable>
         ))}
-      </BottomSheetScrollView>
+      </BottomSheetScrollView> */}
     </View>
   );
 }
@@ -1806,7 +1951,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: 20,
     // alignItems: 'center',
-    color: colors.white
+    borderRadius: 24,
   },
   itemContainer: {
     paddingVertical: 12,

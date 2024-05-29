@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ToastAndroid, Pressable, Image, Keyboard, FlatList } from "react-native";
+import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ToastAndroid, Pressable, Image, Keyboard } from "react-native";
 import MapView, { Polyline } from "react-native-maps";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Marker, AnimatedRegion } from "react-native-maps";
@@ -8,7 +8,7 @@ import { colors } from "../../utility/colors";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import firestore from '@react-native-firebase/firestore';
-import { ScrollView, TextInput } from "react-native-gesture-handler";
+import { FlatList, ScrollView, TextInput } from "react-native-gesture-handler";
 import { decode } from "@googlemaps/polyline-codec";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from '@react-navigation/stack';
@@ -55,6 +55,7 @@ export default function Home({ route, navigation }) {
   const [adjacencyList, setAdjacencyList] = useState(null)
   const [dijkstraPoly, setDijkstraPoly] = useState(null)
   const [pressGraphId, setPressGraphId] = useState(null)
+  const [currentGrafNodes, setCurrentGrafNodes] = useState(null);
   const [searchInput, setSearchInput] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [visible, setIsVisible] = useState(false);
@@ -76,6 +77,14 @@ export default function Home({ route, navigation }) {
       setAdjacencyList(adjacency)
     }
   }, [dataGraf]);
+
+  useEffect(() => {
+    if (pressGraphId) {
+      const selectedGraph = dataGraf?.find(item => item.id === pressGraphId)
+      console.log("selectedGraph", selectedGraph);
+      setCurrentGrafNodes({ startNodeId: selectedGraph.startNodeId, finalNodeId: selectedGraph.finalNodeId })
+    }
+  }, [pressGraphId]);
 
   useEffect(() => {
     setLoading(true)
@@ -249,9 +258,46 @@ export default function Home({ route, navigation }) {
                   />
                 </View>
               ) : (
-                <NodeMarker
-                  color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
-                />
+                pressGraphId ?
+                  currentGrafNodes?.startNodeId === id ?
+                    <View style={{
+                      width: 100,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Text style={{
+                        color: colors.black,
+                        fontWeight: '900',
+                        fontSize: 10,
+                        textAlign: 'center'
+                      }}>{dataNode?.find(item => item.id === currentGrafNodes?.startNodeId)?.nama}</Text>
+                      <NodeMarker
+                        color={colors.green}
+                      />
+                    </View>
+                    : currentGrafNodes?.finalNodeId === id ?
+                      <View style={{
+                        width: 100,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Text style={{
+                          color: colors.black,
+                          fontWeight: '900',
+                          fontSize: 10,
+                          textAlign: 'center'
+                        }}>{dataNode?.find(item => item.id === currentGrafNodes?.finalNodeId)?.nama}</Text>
+                        <NodeMarker
+                          color={colors.purple}
+                        />
+                      </View>
+                      :
+                      <NodeMarker
+                        color={colors.black}
+                      /> :
+                  <NodeMarker
+                    color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                  />
               )}
             </Marker>
           ))
@@ -274,12 +320,13 @@ export default function Home({ route, navigation }) {
                     }
                   } else {
                     setPressid(item?.id)
+                    setPressNodeId(null)
                     _map.current?.animateToRegion({
                       latitude: item?.latitude,
                       longitude: item?.longitude,
                       latitudeDelta: 0.004,
                       longitudeDelta: 0.004,
-                    }, 1)
+                    }, 1000)
                   }
                 }}
               >
@@ -295,7 +342,7 @@ export default function Home({ route, navigation }) {
                     textAlign: 'center'
                   }}>{item.nama}</Text>
                   <CustomMarker
-                    color={(chooseMode || pressNodeId) ? pressNodeId === item?.id ? colors.green : pressId === item?.id ? colors.purple : colors.darkBlue : colors.darkBlue}
+                    color={(chooseMode || pressNodeId || pressId) ? pressNodeId === item?.id ? colors.green : pressId === item?.id ? colors.purple : colors.darkBlue : colors.darkBlue}
                   />
                 </View>
               </Marker>
@@ -313,6 +360,9 @@ export default function Home({ route, navigation }) {
                 onPress={() => {
                   if (!dijkstraPoly) {
                     setPressNodeId(item?.id)
+                  }
+                  if (!chooseMode) {
+                    setPressid(null)
                   }
                 }}
               >
@@ -663,7 +713,56 @@ export default function Home({ route, navigation }) {
               </View>
             </View>
           </BottomSheetView>
-          <BottomSheetScrollView
+          <View style={{ flex: 1, marginBottom: 10 }}>
+            {filteredObjekWisata && (
+              <FlatList
+                data={filteredObjekWisata?.filter(item => item?.tipe === 1)}
+                renderItem={(item) => (
+                  <TouchableOpacity
+                    key={item?.item.id}
+                    onPress={() => {
+                      _map.current?.animateToRegion({
+                        latitude: item?.item.latitude,
+                        longitude: item?.item.longitude,
+                        latitudeDelta: 0.004,
+                        longitudeDelta: 0.004,
+                      }, 1000)
+                      setPressid(item?.item.id)
+                      bottomSheetRef.current?.snapToIndex(0)
+                    }}
+                  >
+                    <View style={styles.itemContainer}>
+                      {item?.item.foto ? (
+                        <Image
+                          source={{
+                            uri: item?.item.foto[0]?.uri,
+                          }}
+                          style={{ width: 50, height: 50, marginRight: 6 }}
+                        />
+                      ) : (
+                        <Image
+                          source={{
+                            uri: "https://www.its.ac.id/tmesin/wp-content/uploads/sites/22/2022/07/no-image.png",
+                          }}
+                          style={{ width: 50, height: 50, marginRight: 6 }}
+                        />
+                      )}
+                      <View style={{
+                        justifyContent: 'center'
+                      }}>
+                        <Text style={styles.textJudul}>{item?.item.nama}</Text>
+                        <Text style={{
+                          fontSize: 13,
+                          color: colors.black,
+                        }}>{item?.item.alamat ? item?.item.alamat : "Belum ada alamat"}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+          {/* <BottomSheetScrollView
             contentContainerStyle={{
               paddingBottom: 20,
               backgroundColor: colors.white
@@ -678,7 +777,7 @@ export default function Home({ route, navigation }) {
                     longitude: item?.longitude,
                     latitudeDelta: 0.004,
                     longitudeDelta: 0.004,
-                  }, 1)
+                  }, 1000)
                   setPressid(item?.id)
                   bottomSheetRef.current?.snapToIndex(0)
                 }}
@@ -711,7 +810,7 @@ export default function Home({ route, navigation }) {
                 </View>
               </TouchableOpacity>
             ))}
-          </BottomSheetScrollView>
+          </BottomSheetScrollView> */}
         </BottomSheet>
       )}
       {dijkstraPoly && (
@@ -805,7 +904,7 @@ export default function Home({ route, navigation }) {
                   onPress={() => {
                     setPressGraphId(item)
                     const graphRegion = dataGraf?.find(i => i?.id === item)?.region
-                    _map.current?.animateToRegion(graphRegion, 1)
+                    _map.current?.animateToRegion(graphRegion, 1000)
                     bottomSheetRouteRef.current?.snapToIndex(0)
                   }}
                 >
@@ -854,13 +953,14 @@ export default function Home({ route, navigation }) {
                 bottomSheetItemRef.current?.snapToIndex(1)
                 setPressNodeId(null)
                 setDijkstraPoly(null)
+                setCurrentGrafNodes(null)
                 setPressGraphId(null)
                 _map.current?.animateToRegion({
                   latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
                   longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
                   latitudeDelta: 0.003,
                   longitudeDelta: 0.003
-                }, 0.5)
+                }, 1000)
               }}
             >
               <Text
@@ -930,7 +1030,7 @@ export default function Home({ route, navigation }) {
                 onPress={() => {
                   const dijkstraResult = dijkstra(adjacencyList, pressNodeId, pressId)
                   setDijkstraPoly(dijkstraResult)
-                  _map.current?.animateToRegion(calculateGrafRegion(dataNode?.find(item => item?.id === pressNodeId), dataNode?.find(item => item?.id === pressId)), 0.5)
+                  _map.current?.animateToRegion(calculateGrafRegion(dataNode?.find(item => item?.id === pressNodeId), dataNode?.find(item => item?.id === pressId)), 1000)
                 }}
               >
                 <Text
@@ -977,7 +1077,7 @@ export default function Home({ route, navigation }) {
                   longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
                   latitudeDelta: 0.003,
                   longitudeDelta: 0.003
-                }, 0.5)
+                }, 1000)
               }}
             >
               <Text
