@@ -21,6 +21,8 @@ import { dijkstra } from "../../utility/dijkstra";
 import ImageView from 'react-native-image-viewing'
 import storage from '@react-native-firebase/storage';
 import { formatIDR } from "../../utility/formatIDR";
+import Home from "../Home";
+import { EmptyScreen } from "../EmptyScreen";
 const { width, height } = Dimensions.get('window')
 const SCREEN_HEIGHT = height
 const SCREEN_WIDTH = width
@@ -66,6 +68,7 @@ export default function HomeAdmin({ route, navigation }) {
   const [currentGrafNodes, setCurrentGrafNodes] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [visible, setIsVisible] = useState(false);
+  const [outModalVisible, setOutModalVisible] = useState(false)
   const [region, setRegion] = useState({
     latitude: -6.5811218,
     longitude: 110.6872181,
@@ -91,7 +94,8 @@ export default function HomeAdmin({ route, navigation }) {
           ...docSnapshot.data()
         })
       });
-      console.log("fetch snapshot node");
+      node.sort((a, b) => a.nama.localeCompare(b.nama))
+      console.log("fetch snapshot node", node);
       setDataNode(node)
       setFilteredObjekWisata(node)
       setFilteredNode(node)
@@ -218,24 +222,6 @@ export default function HomeAdmin({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <Pressable
-        style={{
-          position: 'absolute',
-          right: '0%',
-          zIndex: 1,
-          padding: 10
-        }}
-        onPress={() => {
-          auth().signOut().then(() => {
-            ToastAndroid.show('Berhasil logout', ToastAndroid.SHORT)
-          })
-        }}
-      >
-        <Ionicons
-          name={"exit-outline"}
-          style={{ color: colors.red, fontSize: 37 }}
-        />
-      </Pressable>
       <MapView
         ref={_map}
         style={styles.map}
@@ -674,7 +660,7 @@ export default function HomeAdmin({ route, navigation }) {
               onPress={() => {
                 setLoading(true)
                 firestore().collection('graf').doc(pressGraphId).delete().then(() => {
-                  ToastAndroid.show('Berhasil hapus graf', ToastAndroid.SHORT)
+                  ToastAndroid.show('Berhasil hapus sisi', ToastAndroid.SHORT)
                   setPressGraphId(null)
                   setCurrentGrafNodes(null)
                   bottomSheetGrafRef.current?.snapToIndex(0)
@@ -705,7 +691,7 @@ export default function HomeAdmin({ route, navigation }) {
                     fontWeight: '700',
                   }}
                 >
-                  Hapus Graf
+                  Hapus Sisi
                 </Text>
               </View>
             </TouchableOpacity>
@@ -1217,9 +1203,16 @@ export default function HomeAdmin({ route, navigation }) {
             setPressGraphId={setPressGraphId}
             bottomSheetRef={bottomSheetRef}
             loading={loading}
+            setOutModalVisible={setOutModalVisible}
           />
         </BottomSheet>
       )}
+      <ModalLogout
+        isVisible={outModalVisible}
+        setIsVisible={setOutModalVisible}
+        setLoading={setLoading}
+        navigation={navigation}
+      />
     </View>
   )
 }
@@ -1564,7 +1557,7 @@ function GrafScreen({ data, setRegion, dataNode, handleSnapPress, _map, setPress
               borderColor: colors.darkGrey,
 
             }}
-            placeholder="Cari Graf"
+            placeholder="Cari Sisi"
             placeholderTextColor={colors.darkGrey}
             onChangeText={value => {
               setSearchGraph(value)
@@ -1657,7 +1650,7 @@ function GrafScreen({ data, setRegion, dataNode, handleSnapPress, _map, setPress
 }
 
 const Tab = createBottomTabNavigator();
-const Navigator = ({ dataNode, dataGraf, handleSnapPress, handleClosePress, handleSnapItemPress, handleCloseItemPress, setPressid, setRegion, nodeMarkerRef, navigation, setPressNodeId, setSearchObjek, setFilteredObjekWisata, searchObjek, filteredObjekWisata, setLoading, _map, setPressGraphId, bottomSheetRef, setFilteredNode, filteredNode, filteredGraph, setFilteredGraph, loading }) => {
+const Navigator = ({ dataNode, dataGraf, handleSnapPress, handleClosePress, handleSnapItemPress, handleCloseItemPress, setPressid, setRegion, nodeMarkerRef, navigation, setPressNodeId, setSearchObjek, setFilteredObjekWisata, searchObjek, filteredObjekWisata, setLoading, _map, setPressGraphId, bottomSheetRef, setFilteredNode, filteredNode, filteredGraph, setFilteredGraph, loading, setOutModalVisible }) => {
   return (
     <NavigationContainer independent={true}>
       <Tab.Navigator
@@ -1708,9 +1701,9 @@ const Navigator = ({ dataNode, dataGraf, handleSnapPress, handleClosePress, hand
           {(props) => <NodeScreen data={dataNode} setRegion={setRegion} setPressid={setPressid} handleSnapPress={handleSnapPress} nodeMarkerRef={nodeMarkerRef} setPressNodeId={setPressNodeId} _map={_map} setFilteredNode={setFilteredNode} filteredNode={filteredNode} loading={loading} setLoading={setLoading} navigation={navigation} />}
         </Tab.Screen>
         <Tab.Screen
-          name="Graf"
+          name="Sisi"
           options={{
-            headerTitle: "Daftar Graf",
+            headerTitle: "Daftar Sisi",
             tabBarIcon: ({ color, size }) => (
               <Ionicons name={'analytics-outline'} color={color} size={size} />
             ),
@@ -1728,8 +1721,125 @@ const Navigator = ({ dataNode, dataGraf, handleSnapPress, handleClosePress, hand
         >
           {(props) => <GrafScreen data={dataGraf} dataNode={dataNode} setRegion={setRegion} handleSnapPress={handleSnapPress} _map={_map} setPressGraphId={setPressGraphId} bottomSheetRef={bottomSheetRef} filteredGraph={filteredGraph} setFilteredGraph={setFilteredGraph} loading={loading} />}
         </Tab.Screen>
+        <Tab.Screen
+          name="Logout"
+          component={EmptyScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name={'log-out-outline'} color={colors.red} size={size} />
+            ),
+            tabBarLabelStyle: { color: colors.red },
+          }}
+          listeners={() => ({
+            tabPress: (e) => {
+              e.preventDefault()
+              setOutModalVisible(true)
+            }
+          })}
+        />
       </Tab.Navigator>
     </NavigationContainer>
+  )
+}
+
+function ModalLogout({ isVisible, setIsVisible, setLoading, navigation }) {
+  return (
+    <Modal
+      isVisible={isVisible}
+      backdropOpacity={0.4}
+      onBackButtonPress={() => setIsVisible(false)}
+      onBackdropPress={() => setIsVisible(false)}
+      useNativeDriver={true}
+    >
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{
+            backgroundColor: colors.white,
+            borderRadius: 10,
+            width: '90%',
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            shadowColor: '#000',
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+          }}
+        >
+          <Text style={{ color: colors.black, fontSize: 20, fontWeight: '700', marginBottom: 10 }}>Logout?</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: 15,
+              marginBottom: 10
+            }}
+          >
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.darkBlue,
+                borderRadius: 15,
+                alignItems: 'center',
+                paddingVertical: 10,
+                flexDirection: 'row',
+                justifyContent: "center",
+                flex: 1
+              }}
+              onPress={() => {
+                setIsVisible(false)
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.white,
+                  fontSize: 15,
+                  fontWeight: '700'
+                }}
+              >
+                Tidak
+              </Text>
+            </TouchableOpacity>
+            <View
+              style={{
+                width: 10
+              }}
+            >
+
+            </View>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.darkBlue,
+                borderRadius: 15,
+                alignItems: 'center',
+                paddingVertical: 10,
+                flexDirection: 'row',
+                justifyContent: "center",
+                flex: 1
+              }}
+              onPress={() => {
+                setLoading(true)
+                auth().signOut().then(() => {
+                  setLoading(false)
+                  ToastAndroid.show('Berhasil logout', ToastAndroid.SHORT)
+                })
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.white,
+                  fontSize: 15,
+                  fontWeight: '700'
+                }}
+              >
+                Ya
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   )
 }
 

@@ -555,11 +555,11 @@ export default function AddGraf({ navigation, route }) {
               >
                 <Ionicons
                   name={"chevron-forward-outline"}
-                  style={{ color: colors.darkBlue, fontSize: 30 }}
+                  style={{ color: colors.red, fontSize: 30 }}
                 />
                 <Text
                   style={{
-                    color: colors.darkBlue,
+                    color: colors.red,
                     fontWeight: 'bold'
                   }}
                 >
@@ -569,11 +569,11 @@ export default function AddGraf({ navigation, route }) {
                   <>
                     <Ionicons
                       name={'chevron-back-outline'}
-                      style={{ color: colors.darkBlue, fontSize: 30 }}
+                      style={{ color: colors.red, fontSize: 30 }}
                     />
                     <Text
                       style={{
-                        color: colors.darkBlue,
+                        color: colors.red,
                         fontWeight: 'bold'
                       }}
                     >
@@ -649,7 +649,7 @@ export default function AddGraf({ navigation, route }) {
                       marginBottom: 15
                     }}
                   >
-                    {midPoint.map((item, index) => (
+                    {midPoint.slice(0).reverse().map((item, index) => (
                       <View
                         key={index}
                         style={{
@@ -861,7 +861,7 @@ export default function AddGraf({ navigation, route }) {
                         region: calculateGrafRegion(finalNode, startNode)
                       }).then(doc => {
                         setLoading(false)
-                        ToastAndroid.show('Berhasil menambah graf', ToastAndroid.SHORT)
+                        ToastAndroid.show('Berhasil menambah sisi', ToastAndroid.SHORT)
                         setDrawMode(false)
                         setMidPoint([])
                         setDrawedGraph(null)
@@ -903,7 +903,7 @@ export default function AddGraf({ navigation, route }) {
                     fontWeight: '700',
                   }}
                 >
-                  Tambahkan Graf
+                  Tambahkan Sisi
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1091,7 +1091,7 @@ export default function AddGraf({ navigation, route }) {
               fontWeight: '700'
             }}
           >
-            Buat Graf
+            Buat Sisi
           </Text>
         </TouchableOpacity>
       ) : null}

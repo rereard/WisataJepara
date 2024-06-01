@@ -119,7 +119,7 @@ const Router = () => {
         name="AddGraf"
         component={AddGraf}
         options={{
-          headerTitle: 'Tambah Graf',
+          headerTitle: 'Tambah Sisi',
           headerStyle: {
             backgroundColor: colors.darkBlue,
           },

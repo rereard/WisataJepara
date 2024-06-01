@@ -71,12 +71,20 @@ export default function Home({ route, navigation }) {
   const snapPointsRoute = useMemo(() => ["20%", "30%", "40%", "50%", "60%", "70%", "80%"], []);
 
   useEffect(() => {
-    console.log("filtered objek", filteredObjekWisata);
     if (dataGraf && dataNode) {
       const adjacency = buildGraph(dataNode, dataGraf)
       setAdjacencyList(adjacency)
     }
   }, [dataGraf]);
+
+  useEffect(() => {
+    console.log("press id", pressId);
+    console.log("press node id", pressNodeId);
+  }, [pressId, pressNodeId]);
+
+  useEffect(() => {
+    console.log("dijkstraPoly", dijkstraPoly);
+  }, [dijkstraPoly]);
 
   useEffect(() => {
     if (pressGraphId) {
@@ -233,7 +241,6 @@ export default function Home({ route, navigation }) {
             <Marker
               key={id}
               tracksViewChanges={false}
-              title={dataNode?.find(item => item?.id === id)?.tipe === 2 ? dataNode?.find(item => item?.id === id)?.nama : null}
               coordinate={({
                 latitude: dataNode?.find(item => item?.id === id)?.latitude,
                 longitude: dataNode?.find(item => item?.id === id)?.longitude,
@@ -295,9 +302,26 @@ export default function Home({ route, navigation }) {
                       <NodeMarker
                         color={colors.black}
                       /> :
-                  <NodeMarker
-                    color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
-                  />
+                  id === pressNodeId ?
+                    <View style={{
+                      width: 100,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Text style={{
+                        color: colors.black,
+                        fontWeight: '900',
+                        fontSize: 10,
+                        textAlign: 'center'
+                      }}>{dataNode?.find(item => item.id === pressNodeId)?.nama}</Text>
+                      <NodeMarker
+                        color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                      />
+                    </View>
+                    :
+                    <NodeMarker
+                      color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                    />
               )}
             </Marker>
           ))
@@ -534,7 +558,7 @@ export default function Home({ route, navigation }) {
                 <Text style={{ color: colors.black, fontSize: 16 }}>{dataNode?.find(item => item?.id === pressId)?.deskripsi}</Text>
               </View>
             )}
-            {dataNode?.find(item => item?.id === pressId)?.jamBuka && (
+            {(dataNode?.find(item => item?.id === pressId)?.jamBuka && !dataNode?.find(item => item?.id === pressId)?.jamBuka?.every(item => item?.buka === "" && item?.tutup === "")) && (
               <View style={{ marginBottom: 20 }}>
                 <Text style={{ color: colors.black, fontSize: 16, fontWeight: '700', marginBottom: 7 }}>Waktu Buka</Text>
                 {dataNode?.find(item => item?.id === pressId)?.jamBuka?.map((item, index) => (
@@ -597,7 +621,7 @@ export default function Home({ route, navigation }) {
                 ))}
               </View>
             )}
-            {dataNode?.find(item => item?.id === pressId)?.htm && (
+            {dataNode?.find(item => item?.id === pressId)?.htm && !dataNode?.find(item => item?.id === pressId)?.htm?.every(item => item?.anak === "" && item?.dewasa === "") && (
               <View style={{ marginBottom: 20 }}>
                 <Text style={{ color: colors.black, fontSize: 16, fontWeight: '700', marginBottom: 7 }}>Harga Tiket Masuk</Text>
                 {dataNode?.find(item => item?.id === pressId)?.htm?.map((item, index) => (
@@ -842,9 +866,26 @@ export default function Home({ route, navigation }) {
             justifyContent: "space-between",
             marginBottom: 10
           }}>
+            {pressGraphId && (
+              <Pressable
+                style={{
+                  alignItems: 'center',
+                  paddingRight: 20
+                }}
+                onPress={() => {
+                  setPressGraphId(null)
+                }}
+              >
+                <Ionicons
+                  name={"arrow-back"}
+                  style={{ color: colors.darkGrey, fontSize: 30 }}
+                />
+              </Pressable>
+            )}
             <View
               style={{
-                flex: 1
+                flex: 1,
+                alignItems: 'center'
               }}
             >
               <Text style={{
@@ -853,7 +894,7 @@ export default function Home({ route, navigation }) {
                 fontSize: 17,
                 marginBottom: 4,
               }}>
-                {dataNode?.find(item => item?.id === pressNodeId)?.nama}
+                {pressGraphId ? dataNode?.find(item => item.id === currentGrafNodes?.startNodeId)?.nama : dataNode?.find(item => item?.id === pressNodeId)?.nama}
               </Text>
             </View>
             <View
@@ -864,15 +905,15 @@ export default function Home({ route, navigation }) {
             >
               <Ionicons
                 name={"chevron-forward-outline"}
-                style={{ color: colors.red, fontSize: 30 }}
+                style={{ color: pressGraphId ? colors.yellow : colors.red, fontSize: 30 }}
               />
               <Text
                 style={{
-                  color: colors.red,
+                  color: pressGraphId ? colors.yellow : colors.red,
                   fontWeight: 'bold'
                 }}
               >
-                {dijkstraPoly?.distance} m
+                {pressGraphId ? dataGraf?.find(i => i?.id === pressGraphId)?.jarak : dijkstraPoly?.distance} m
               </Text>
             </View>
             <View
@@ -887,7 +928,7 @@ export default function Home({ route, navigation }) {
                 fontSize: 17,
                 marginBottom: 4,
               }}>
-                {dataNode?.find(item => item?.id === pressId)?.nama}
+                {pressGraphId ? dataNode?.find(item => item.id === currentGrafNodes?.finalNodeId)?.nama : dataNode?.find(item => item?.id === pressId)?.nama}
               </Text>
             </View>
           </BottomSheetView>
@@ -916,7 +957,7 @@ export default function Home({ route, navigation }) {
                   >
                     <Text
                       style={{
-                        color: colors.black,
+                        color: (pressGraphId && pressGraphId === item.item) ? colors.yellow : colors.black,
                         fontWeight: 'bold',
                         fontSize: 14,
                         flex: 1
@@ -1086,6 +1127,7 @@ export default function Home({ route, navigation }) {
             backgroundColor: colors.green,
             padding: 7,
             borderRadius: 10,
+            marginBottom: 5
           }}>
             <Ionicons
               name={"information-circle-outline"}
@@ -1102,6 +1144,42 @@ export default function Home({ route, navigation }) {
               {pressNodeId ? dataNode?.find(item => item?.id === pressNodeId).nama : "Pilih Titik Berangkat"}
             </Text>
           </View>
+          {pressNodeId && (
+            <>
+              <View
+                style={{ justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Ionicons
+                  name={"arrow-down-circle-outline"}
+                  style={{ color: colors.red, fontSize: 35 }}
+                />
+              </View>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                margin: 10,
+                backgroundColor: colors.purple,
+                padding: 7,
+                borderRadius: 10,
+                marginTop: 5
+              }}>
+                <Ionicons
+                  name={"information-circle-outline"}
+                  style={{ color: colors.white, fontSize: 35 }}
+                />
+                <Text
+                  style={{
+                    color: colors.white,
+                    fontWeight: '700',
+                    fontSize: 17,
+                    marginLeft: 7
+                  }}
+                >
+                  {dataNode?.find(item => item?.id === pressId).nama}
+                </Text>
+              </View>
+            </>
+          )}
           <View
             style={{
               alignSelf: 'center',
