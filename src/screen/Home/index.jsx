@@ -16,7 +16,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Spinner from "react-native-loading-spinner-overlay";
 import ImageView from 'react-native-image-viewing'
 import { buildGraph } from "../../utility/buildGraph";
-import { dijkstra } from "../../utility/dijkstra";
+import { dijkstra, yenKShortestPaths } from "../../utility/dijkstra";
 import { formatIDR } from "../../utility/formatIDR";
 const { width, height } = Dimensions.get('window')
 const SCREEN_HEIGHT = height
@@ -54,11 +54,15 @@ export default function Home({ route, navigation }) {
   const [chooseMode, setChooseMode] = useState(false)
   const [adjacencyList, setAdjacencyList] = useState(null)
   const [dijkstraPoly, setDijkstraPoly] = useState(null)
+  const [mainPoly, setMainPoly] = useState(null)
+  const [yenKPoly, setYenKPoly] = useState(null)
+  const [jarakAlternatif, setJarakAlternatif] = useState(0)
   const [pressGraphId, setPressGraphId] = useState(null)
   const [currentGrafNodes, setCurrentGrafNodes] = useState(null);
   const [searchInput, setSearchInput] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [visible, setIsVisible] = useState(false);
+  const [routeTabIndex, setRouteTabIndex] = useState(0)
   const [region, setRegion] = useState({
     latitude: -6.5811218,
     longitude: 110.6872181,
@@ -84,7 +88,8 @@ export default function Home({ route, navigation }) {
 
   useEffect(() => {
     console.log("dijkstraPoly", dijkstraPoly);
-  }, [dijkstraPoly]);
+    console.log("yenKPoly", yenKPoly);
+  }, [dijkstraPoly, yenKPoly]);
 
   useEffect(() => {
     if (pressGraphId) {
@@ -149,6 +154,15 @@ export default function Home({ route, navigation }) {
       longitudeDelta
     }
   }, [])
+
+  const countAltDistance = useCallback((edges) => {
+    let total = 0;
+    edges?.map(item => {
+      total = total + dataGraf?.find(i => i.id === item)?.jarak
+    })
+    console.log("total", total);
+    return total
+  })
 
   const dayFinder = useCallback((index) => {
     switch (index) {
@@ -237,52 +251,37 @@ export default function Home({ route, navigation }) {
         ]}
       >
         {dijkstraPoly ? (
-          dijkstraPoly?.path?.map(id => (
-            <Marker
-              key={id}
-              tracksViewChanges={false}
-              coordinate={({
-                latitude: dataNode?.find(item => item?.id === id)?.latitude,
-                longitude: dataNode?.find(item => item?.id === id)?.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              })}
-            >
-              {dataNode?.find(item => item?.id === id)?.tipe === 1 ? (
-                <View style={{
-                  width: 100,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Text style={{
-                    color: colors.black,
-                    fontWeight: '900',
-                    fontSize: 10,
-                    textAlign: 'center'
-                  }}>{dataNode?.find(item => item?.id === id)?.nama}</Text>
-                  <CustomMarker
-                    color={(chooseMode || pressNodeId) ? pressNodeId === id ? colors.green : pressId === id ? colors.purple : colors.darkBlue : colors.darkBlue}
-                  />
-                </View>
-              ) : (
-                pressGraphId ?
-                  currentGrafNodes?.startNodeId === id ?
-                    <View style={{
-                      width: 100,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <Text style={{
-                        color: colors.black,
-                        fontWeight: '900',
-                        fontSize: 10,
-                        textAlign: 'center'
-                      }}>{dataNode?.find(item => item.id === currentGrafNodes?.startNodeId)?.nama}</Text>
-                      <NodeMarker
-                        color={colors.green}
-                      />
-                    </View>
-                    : currentGrafNodes?.finalNodeId === id ?
+          routeTabIndex === 0 ?
+            dijkstraPoly?.path?.map(id => (
+              <Marker
+                key={id}
+                tracksViewChanges={false}
+                coordinate={({
+                  latitude: dataNode?.find(item => item?.id === id)?.latitude,
+                  longitude: dataNode?.find(item => item?.id === id)?.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                })}
+              >
+                {dataNode?.find(item => item?.id === id)?.tipe === 1 ? (
+                  <View style={{
+                    width: 100,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Text style={{
+                      color: colors.black,
+                      fontWeight: '900',
+                      fontSize: 10,
+                      textAlign: 'center'
+                    }}>{dataNode?.find(item => item?.id === id)?.nama}</Text>
+                    <CustomMarker
+                      color={(chooseMode || pressNodeId) ? pressNodeId === id ? colors.green : pressId === id ? colors.purple : colors.darkBlue : colors.darkBlue}
+                    />
+                  </View>
+                ) : (
+                  pressGraphId ?
+                    currentGrafNodes?.startNodeId === id ?
                       <View style={{
                         width: 100,
                         alignItems: 'center',
@@ -293,16 +292,67 @@ export default function Home({ route, navigation }) {
                           fontWeight: '900',
                           fontSize: 10,
                           textAlign: 'center'
-                        }}>{dataNode?.find(item => item.id === currentGrafNodes?.finalNodeId)?.nama}</Text>
+                        }}>{dataNode?.find(item => item.id === currentGrafNodes?.startNodeId)?.nama}</Text>
                         <NodeMarker
-                          color={colors.purple}
+                          color={colors.green}
+                        />
+                      </View>
+                      : currentGrafNodes?.finalNodeId === id ?
+                        <View style={{
+                          width: 100,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{
+                            color: colors.black,
+                            fontWeight: '900',
+                            fontSize: 10,
+                            textAlign: 'center'
+                          }}>{dataNode?.find(item => item.id === currentGrafNodes?.finalNodeId)?.nama}</Text>
+                          <NodeMarker
+                            color={colors.purple}
+                          />
+                        </View>
+                        :
+                        <NodeMarker
+                          color={colors.black}
+                        /> :
+                    id === pressNodeId ?
+                      <View style={{
+                        width: 100,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Text style={{
+                          color: colors.black,
+                          fontWeight: '900',
+                          fontSize: 10,
+                          textAlign: 'center'
+                        }}>{dataNode?.find(item => item.id === pressNodeId)?.nama}</Text>
+                        <NodeMarker
+                          color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
                         />
                       </View>
                       :
                       <NodeMarker
-                        color={colors.black}
-                      /> :
-                  id === pressNodeId ?
+                        color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                      />
+                )}
+              </Marker>
+            )) :
+            routeTabIndex === 1 ?
+              yenKPoly[1]?.path?.map((id, index) => (
+                <Marker
+                  key={index}
+                  tracksViewChanges={false}
+                  coordinate={({
+                    latitude: dataNode?.find(item => item?.id === id)?.latitude,
+                    longitude: dataNode?.find(item => item?.id === id)?.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  })}
+                >
+                  {dataNode?.find(item => item?.id === id)?.tipe === 1 ? (
                     <View style={{
                       width: 100,
                       alignItems: 'center',
@@ -313,18 +363,161 @@ export default function Home({ route, navigation }) {
                         fontWeight: '900',
                         fontSize: 10,
                         textAlign: 'center'
-                      }}>{dataNode?.find(item => item.id === pressNodeId)?.nama}</Text>
-                      <NodeMarker
-                        color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                      }}>{dataNode?.find(item => item?.id === id)?.nama}</Text>
+                      <CustomMarker
+                        color={(chooseMode || pressNodeId) ? pressNodeId === id ? colors.green : pressId === id ? colors.purple : colors.darkBlue : colors.darkBlue}
                       />
                     </View>
-                    :
-                    <NodeMarker
-                      color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
-                    />
-              )}
-            </Marker>
-          ))
+                  ) : (
+                    pressGraphId ?
+                      currentGrafNodes?.startNodeId === id ?
+                        <View style={{
+                          width: 100,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{
+                            color: colors.black,
+                            fontWeight: '900',
+                            fontSize: 10,
+                            textAlign: 'center'
+                          }}>{dataNode?.find(item => item.id === currentGrafNodes?.startNodeId)?.nama}</Text>
+                          <NodeMarker
+                            color={colors.green}
+                          />
+                        </View>
+                        : currentGrafNodes?.finalNodeId === id ?
+                          <View style={{
+                            width: 100,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            <Text style={{
+                              color: colors.black,
+                              fontWeight: '900',
+                              fontSize: 10,
+                              textAlign: 'center'
+                            }}>{dataNode?.find(item => item.id === currentGrafNodes?.finalNodeId)?.nama}</Text>
+                            <NodeMarker
+                              color={colors.purple}
+                            />
+                          </View>
+                          :
+                          <NodeMarker
+                            color={colors.black}
+                          /> :
+                      id === pressNodeId ?
+                        <View style={{
+                          width: 100,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{
+                            color: colors.black,
+                            fontWeight: '900',
+                            fontSize: 10,
+                            textAlign: 'center'
+                          }}>{dataNode?.find(item => item.id === pressNodeId)?.nama}</Text>
+                          <NodeMarker
+                            color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                          />
+                        </View>
+                        :
+                        <NodeMarker
+                          color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                        />
+                  )}
+                </Marker>
+              )) :
+              routeTabIndex === 2 &&
+              yenKPoly[2]?.path?.map((id, index) => (
+                <Marker
+                  key={index}
+                  tracksViewChanges={false}
+                  coordinate={({
+                    latitude: dataNode?.find(item => item?.id === id)?.latitude,
+                    longitude: dataNode?.find(item => item?.id === id)?.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  })}
+                >
+                  {dataNode?.find(item => item?.id === id)?.tipe === 1 ? (
+                    <View style={{
+                      width: 100,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Text style={{
+                        color: colors.black,
+                        fontWeight: '900',
+                        fontSize: 10,
+                        textAlign: 'center'
+                      }}>{dataNode?.find(item => item?.id === id)?.nama}</Text>
+                      <CustomMarker
+                        color={(chooseMode || pressNodeId) ? pressNodeId === id ? colors.green : pressId === id ? colors.purple : colors.darkBlue : colors.darkBlue}
+                      />
+                    </View>
+                  ) : (
+                    pressGraphId ?
+                      currentGrafNodes?.startNodeId === id ?
+                        <View style={{
+                          width: 100,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{
+                            color: colors.black,
+                            fontWeight: '900',
+                            fontSize: 10,
+                            textAlign: 'center'
+                          }}>{dataNode?.find(item => item.id === currentGrafNodes?.startNodeId)?.nama}</Text>
+                          <NodeMarker
+                            color={colors.green}
+                          />
+                        </View>
+                        : currentGrafNodes?.finalNodeId === id ?
+                          <View style={{
+                            width: 100,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            <Text style={{
+                              color: colors.black,
+                              fontWeight: '900',
+                              fontSize: 10,
+                              textAlign: 'center'
+                            }}>{dataNode?.find(item => item.id === currentGrafNodes?.finalNodeId)?.nama}</Text>
+                            <NodeMarker
+                              color={colors.purple}
+                            />
+                          </View>
+                          :
+                          <NodeMarker
+                            color={colors.black}
+                          /> :
+                      id === pressNodeId ?
+                        <View style={{
+                          width: 100,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{
+                            color: colors.black,
+                            fontWeight: '900',
+                            fontSize: 10,
+                            textAlign: 'center'
+                          }}>{dataNode?.find(item => item.id === pressNodeId)?.nama}</Text>
+                          <NodeMarker
+                            color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                          />
+                        </View>
+                        :
+                        <NodeMarker
+                          color={(chooseMode && pressNodeId) ? pressNodeId === id ? colors.green : colors.black : colors.black}
+                        />
+                  )}
+                </Marker>
+              ))
         ) :
           dataNode?.map(item => (
             item?.tipe == 1 ?
@@ -397,14 +590,48 @@ export default function Home({ route, navigation }) {
           ))
         }
         {dijkstraPoly && (
-          dijkstraPoly?.edges?.map(edgeId => (
-            <Polyline
-              key={edgeId}
-              coordinates={dataGraf?.find(item => item.id === edgeId)?.polyline}
-              strokeWidth={3}
-              strokeColor={pressGraphId === edgeId ? colors.yellow : colors.red}
-            />
-          ))
+          <>
+            {yenKPoly.length > 0 && (
+              <>
+                {yenKPoly[1]?.path.some((str, index) => yenKPoly[1]?.path.indexOf(str) !== yenKPoly[1]?.path.lastIndexOf(str)) ? null : (
+                  yenKPoly[1]?.edges?.map((edgeId, index) => (
+                    <Polyline
+                      key={index}
+                      coordinates={dataGraf?.find(item => item.id === edgeId)?.polyline}
+                      strokeWidth={3}
+                      strokeColor={routeTabIndex === 1 ? colors.red : colors.darkGrey}
+                    />
+                  ))
+                )}
+                {yenKPoly[2]?.path.some((str, index) => yenKPoly[2]?.path.indexOf(str) !== yenKPoly[2]?.path.lastIndexOf(str)) ? null : (
+                  yenKPoly[2]?.edges?.map((edgeId, index) => (
+                    <Polyline
+                      key={index}
+                      coordinates={dataGraf?.find(item => item.id === edgeId)?.polyline}
+                      strokeWidth={3}
+                      strokeColor={routeTabIndex === 2 ? colors.red : colors.darkGrey}
+                    />
+                  ))
+                )}
+              </>
+            )}
+            {dijkstraPoly?.edges?.map(edgeId => (
+              <Polyline
+                key={edgeId}
+                coordinates={dataGraf?.find(item => item.id === edgeId)?.polyline}
+                strokeWidth={3}
+                strokeColor={pressGraphId === edgeId ? colors.yellow : routeTabIndex === 0 ? colors.red : colors.darkGrey}
+              />
+            ))}
+            {mainPoly?.edges?.map((edgeId, index) => (
+              <Polyline
+                key={index}
+                coordinates={dataGraf?.find(item => item.id === edgeId)?.polyline}
+                strokeWidth={3}
+                strokeColor={pressGraphId === edgeId ? colors.yellow : routeTabIndex === 0 ? colors.red : routeTabIndex === 1 ? colors.purple : routeTabIndex === 2 ? colors.darkBlue : colors.darkGrey}
+              />
+            ))}
+          </>
         )}
       </MapView>
       <Spinner
@@ -905,15 +1132,15 @@ export default function Home({ route, navigation }) {
             >
               <Ionicons
                 name={"chevron-forward-outline"}
-                style={{ color: pressGraphId ? colors.yellow : colors.red, fontSize: 30 }}
+                style={{ color: pressGraphId ? colors.yellow : routeTabIndex === 0 ? colors.red : routeTabIndex === 1 ? colors.purple : routeTabIndex === 2 && colors.darkBlue, fontSize: 30 }}
               />
               <Text
                 style={{
-                  color: pressGraphId ? colors.yellow : colors.red,
+                  color: pressGraphId ? colors.yellow : routeTabIndex === 0 ? colors.red : routeTabIndex === 1 ? colors.purple : routeTabIndex === 2 && colors.darkBlue,
                   fontWeight: 'bold'
                 }}
               >
-                {pressGraphId ? dataGraf?.find(i => i?.id === pressGraphId)?.jarak : dijkstraPoly?.distance} m
+                {pressGraphId ? dataGraf?.find(i => i?.id === pressGraphId)?.jarak : routeTabIndex === 0 ? dijkstraPoly?.distance : routeTabIndex === 1 ? jarakAlternatif : routeTabIndex === 2 && jarakAlternatif} m
               </Text>
             </View>
             <View
@@ -935,7 +1162,7 @@ export default function Home({ route, navigation }) {
           <View style={{ flex: 1, marginBottom: 7 }}>
             {dijkstraPoly && (
               <FlatList
-                data={dijkstraPoly?.edges}
+                data={routeTabIndex === 0 ? dijkstraPoly?.edges : routeTabIndex === 1 ? yenKPoly[1]?.edges : routeTabIndex === 2 && yenKPoly[2]?.edges}
                 renderItem={item => (
                   <TouchableOpacity
                     key={item.item}
@@ -980,6 +1207,96 @@ export default function Home({ route, navigation }) {
               />
             )}
           </View>
+          {yenKPoly.length > 1 && (
+            <View
+              style={{ flexDirection: 'row', justifyContent: 'space-around' }}
+            >
+              <Pressable
+                style={{
+                  alignItems: 'center',
+                  padding: 10
+                }}
+                onPress={() => {
+                  setRouteTabIndex(0)
+                  setMainPoly(dijkstraPoly)
+                  bottomSheetRouteRef.current?.snapToIndex(1)
+                }}
+              >
+                <Ionicons
+                  name='analytics-outline'
+                  style={{
+                    fontSize: 20,
+                    color: routeTabIndex === 0 ? colors.red : colors.darkGrey,
+                  }}
+                />
+                <Text
+                  style={{
+                    color: routeTabIndex === 0 ? colors.red : colors.darkGrey,
+                    fontSize: 15,
+                    fontWeight: '700'
+                  }}
+                >Rute</Text>
+              </Pressable>
+              {yenKPoly[1]?.path.some((str, index) => yenKPoly[1]?.path.indexOf(str) !== yenKPoly[1]?.path.lastIndexOf(str)) ? null : (
+                <Pressable
+                  style={{
+                    alignItems: 'center',
+                    padding: 10
+                  }}
+                  onPress={() => {
+                    setRouteTabIndex(1)
+                    setMainPoly(yenKPoly[1])
+                    bottomSheetRouteRef.current?.snapToIndex(1)
+                    setJarakAlternatif(countAltDistance(yenKPoly[1].edges))
+                  }}
+                >
+                  <Ionicons
+                    name='analytics-outline'
+                    style={{
+                      fontSize: 20,
+                      color: routeTabIndex === 1 ? colors.purple : colors.darkGrey,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      color: routeTabIndex === 1 ? colors.purple : colors.darkGrey,
+                      fontSize: 15,
+                      fontWeight: '700'
+                    }}
+                  >Alternatif 1</Text>
+                </Pressable>
+              )}
+              {yenKPoly[2]?.path.some((str, index) => yenKPoly[2]?.path.indexOf(str) !== yenKPoly[2]?.path.lastIndexOf(str)) ? null : (
+                <Pressable
+                  style={{
+                    alignItems: 'center',
+                    padding: 10
+                  }}
+                  onPress={() => {
+                    setRouteTabIndex(2)
+                    setMainPoly(yenKPoly[2])
+                    bottomSheetRouteRef.current?.snapToIndex(1)
+                    setJarakAlternatif(countAltDistance(yenKPoly[2].edges))
+                  }}
+                >
+                  <Ionicons
+                    name='analytics-outline'
+                    style={{
+                      fontSize: 20,
+                      color: routeTabIndex === 2 ? colors.darkBlue : colors.darkGrey,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      color: routeTabIndex === 2 ? colors.darkBlue : colors.darkGrey,
+                      fontSize: 15,
+                      fontWeight: '700'
+                    }}
+                  >Alternatif 2</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
           <TouchableOpacity
             style={{
               backgroundColor: colors.red,
@@ -1001,8 +1318,12 @@ export default function Home({ route, navigation }) {
               bottomSheetItemRef.current?.snapToIndex(1)
               setPressNodeId(null)
               setDijkstraPoly(null)
+              setYenKPoly(null)
+              setMainPoly(null)
+              setJarakAlternatif(null)
               setCurrentGrafNodes(null)
               setPressGraphId(null)
+              setRouteTabIndex(0)
               _map.current?.animateToRegion({
                 latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
                 longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
@@ -1021,101 +1342,6 @@ export default function Home({ route, navigation }) {
               Kembali
             </Text>
           </TouchableOpacity>
-          {/* <BottomSheetScrollView
-            contentContainerStyle={{
-              paddingBottom: 25
-            }}
-          >
-            <View
-              style={{
-                marginBottom: 15
-              }}
-            >
-              {dijkstraPoly?.edges?.map(item => (
-                <TouchableOpacity
-                  key={item}
-                  style={{
-                    paddingVertical: 12,
-                    borderBottomWidth: 2,
-                    borderColor: 'rgba(196, 196, 196, 0.5)',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    alignContent: 'flex-end'
-                  }}
-                  onPress={() => {
-                    setPressGraphId(item)
-                    const graphRegion = dataGraf?.find(i => i?.id === item)?.region
-                    _map.current?.animateToRegion(graphRegion, 1000)
-                    bottomSheetRouteRef.current?.snapToIndex(0)
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.black,
-                      fontWeight: 'bold',
-                      fontSize: 14,
-                      flex: 1
-                    }}
-                  >
-                    {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item)?.startNodeId)?.nama} - {dataNode?.find(i => i?.id === dataGraf?.find(i => i?.id === item)?.finalNodeId)?.nama}
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.black,
-                      fontWeight: 'bold',
-                      fontSize: 14,
-                      // flex: 1
-                    }}
-                  >
-                    {dataGraf?.find(i => i?.id === item)?.jarak} m
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.red,
-                borderRadius: 15,
-                alignItems: 'center',
-                paddingVertical: 10,
-                flex: 1,
-                shadowColor: "#000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5,
-                marginVertical: 10
-              }}
-              onPress={() => {
-                setChooseMode(false)
-                bottomSheetItemRef.current?.snapToIndex(1)
-                setPressNodeId(null)
-                setDijkstraPoly(null)
-                setCurrentGrafNodes(null)
-                setPressGraphId(null)
-                _map.current?.animateToRegion({
-                  latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
-                  longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
-                  latitudeDelta: 0.003,
-                  longitudeDelta: 0.003
-                }, 1000)
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.white,
-                  fontSize: 15,
-                  fontWeight: '700',
-                }}
-              >
-                Kembali
-              </Text>
-            </TouchableOpacity>
-          </BottomSheetScrollView> */}
         </BottomSheet>
       )}
       {(chooseMode && !dijkstraPoly) && (
@@ -1208,7 +1434,9 @@ export default function Home({ route, navigation }) {
                 }}
                 onPress={() => {
                   const dijkstraResult = dijkstra(adjacencyList, pressNodeId, pressId)
+                  const yenKresult = yenKShortestPaths(dijkstraResult, adjacencyList, pressNodeId, pressId, 3)
                   setDijkstraPoly(dijkstraResult)
+                  setYenKPoly(yenKresult)
                   _map.current?.animateToRegion(calculateGrafRegion(dataNode?.find(item => item?.id === pressNodeId), dataNode?.find(item => item?.id === pressId)), 1000)
                 }}
               >

@@ -3,7 +3,8 @@ import { ScrollView, TextInput } from "react-native-gesture-handler";
 import { colors } from "../../utility/colors";
 import { useRef, useState, useEffect, createRef, useMemo, useCallback } from "react";
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MapView, { Callout, Marker, Polyline } from "react-native-maps";
+import { Callout, Marker, Polyline } from "react-native-maps";
+import MapView from "react-native-map-clustering";
 import firestore from '@react-native-firebase/firestore';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { decode } from "@googlemaps/polyline-codec";
@@ -37,6 +38,7 @@ export default function AddGraf({ navigation, route }) {
   const [drawedGraph, setDrawedGraph] = useState(null)
   const [midPoint, setMidPoint] = useState([])
   const [drawMarkerRegion, setDrawMarkerRegion] = useState(null)
+  const [filterReversiblePolyline, setFilterReversiblePolyline] = useState(null)
   const [region, setRegion] = useState({
     latitude: -6.5811218,
     longitude: 110.6872181,
@@ -62,6 +64,22 @@ export default function AddGraf({ navigation, route }) {
       subscribeGraf()
     };
   }, []);
+
+  useEffect(() => {
+    const filteredPolylines = [];
+    const polylineSet = new Set();
+
+    dataGraf?.forEach(poly => {
+      const { startNodeId, finalNodeId, polyline, jarak, region, id } = poly;
+      const pair1 = `${startNodeId}-${finalNodeId}-${jarak}`;
+      const pair2 = `${finalNodeId}-${startNodeId}-${jarak}`;
+      if (!polylineSet.has(pair1) && !polylineSet.has(pair2)) {
+        filteredPolylines.push({ startNodeId, finalNodeId, polyline, jarak, region, id });
+        polylineSet.add(pair1);
+      }
+    })
+    setFilterReversiblePolyline(filteredPolylines)
+  }, [dataGraf]);
 
   useEffect(() => {
     if (polyline) {
@@ -140,6 +158,7 @@ export default function AddGraf({ navigation, route }) {
     }
   }
 
+
   const handleCloseSheet = useCallback(() => {
     sheetRef.current?.close()
   }, [])
@@ -197,6 +216,25 @@ export default function AddGraf({ navigation, route }) {
         style={{
           ...StyleSheet.absoluteFillObject
         }}
+        renderCluster={cluster => {
+          return (
+            cluster?.coordinate &&
+            <Marker key={cluster?.clusterId} coordinate={cluster?.coordinate} onPress={cluster?.onPress}>
+              <Text style={{
+                color: colors.black,
+                fontWeight: '900',
+                fontSize: 10,
+                textAlign: 'center'
+              }}>{cluster?.pointCount}</Text>
+              <NodeMarker
+                color={colors.black}
+              />
+            </Marker>
+          )
+        }}
+        maxZoom={13}
+        minZoom={7}
+        minPoints={7}
         region={region}
         onPress={() => {
           handleCloseSheet()
@@ -385,7 +423,7 @@ export default function AddGraf({ navigation, route }) {
             </Marker>
           ))
         ) : null}
-        {dataGraf?.map(item => (
+        {filterReversiblePolyline?.map(item => (
           <Polyline
             key={item?.id}
             coordinates={item?.polyline}
@@ -878,7 +916,7 @@ export default function AddGraf({ navigation, route }) {
                       })
                     } else {
                       setLoading(false)
-                      ToastAndroid.show('Berhasil menambah graf', ToastAndroid.SHORT)
+                      ToastAndroid.show('Berhasil menambah sisi', ToastAndroid.SHORT)
                       setDrawMode(false)
                       setMidPoint([])
                       setDrawedGraph(null)

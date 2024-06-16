@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, Dimensions, TouchableOpacity, ToastAndroid, Pressable, Image, Keyboard, VirtualizedList } from "react-native";
 import Modal from "react-native-modal";
-import MapView, { Polyline } from "react-native-maps";
+import { Polyline } from "react-native-maps";
+import MapView from "react-native-map-clustering";
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { Marker, AnimatedRegion } from "react-native-maps";
 import GetLocation from 'react-native-get-location';
@@ -86,6 +87,7 @@ export default function HomeAdmin({ route, navigation }) {
 
   useEffect(() => {
     setLoading(true)
+    let nodesMap = {}
     const subscriber = firestore().collection('node').onSnapshot(querySnapshot => {
       const node = [];
       querySnapshot.forEach(docSnapshot => {
@@ -96,6 +98,10 @@ export default function HomeAdmin({ route, navigation }) {
       });
       node.sort((a, b) => a.nama.localeCompare(b.nama))
       console.log("fetch snapshot node", node);
+      nodesMap = node.reduce((map, node) => {
+        map[node.id] = node;
+        return map
+      }, {})
       setDataNode(node)
       setFilteredObjekWisata(node)
       setFilteredNode(node)
@@ -108,6 +114,14 @@ export default function HomeAdmin({ route, navigation }) {
           ...docSnapshot.data()
         })
       })
+      const sorted = graf.sort((a, b) => {
+        const startNodeA = nodesMap[a.startNodeId]
+        const startNodeB = nodesMap[b.startNodeId]
+        if (startNodeA && startNodeB) {
+          return startNodeA.nama.localeCompare(startNodeB.name);
+        }
+        return 0;
+      })
       console.log("fetch snapshot graf");
       setDataGraf(graf)
       setFilteredGraph(graf)
@@ -119,6 +133,21 @@ export default function HomeAdmin({ route, navigation }) {
       subscribeGraf()
     };
   }, []);
+
+  useEffect(() => {
+    if (dataGraf && dataNode) {
+      const sorted = dataGraf.sort((a, b) => {
+        const startNodeA = dataNode.find(item => item.id === a.startNodeId)
+        const startNodeB = dataNode.find(item => item.id === b.startNodeId)
+        if (startNodeA && startNodeB) {
+          return startNodeA.nama.localeCompare(startNodeB.nama);
+        }
+        return 0;
+      })
+      setDataGraf(sorted)
+      setFilteredGraph(sorted)
+    }
+  }, [dataGraf]);
 
   useEffect(() => {
     const filteredPolylines = [];
@@ -223,6 +252,25 @@ export default function HomeAdmin({ route, navigation }) {
   return (
     <View style={styles.container}>
       <MapView
+        renderCluster={cluster => {
+          return (
+            cluster?.coordinate &&
+            <Marker key={cluster?.clusterId} coordinate={cluster?.coordinate} onPress={cluster?.onPress}>
+              <Text style={{
+                color: colors.black,
+                fontWeight: '900',
+                fontSize: 10,
+                textAlign: 'center'
+              }}>{cluster?.pointCount}</Text>
+              <NodeMarker
+                color={colors.black}
+              />
+            </Marker>
+          )
+        }}
+        maxZoom={13}
+        minZoom={7}
+        minPoints={7}
         ref={_map}
         style={styles.map}
         region={region}
@@ -411,7 +459,7 @@ export default function HomeAdmin({ route, navigation }) {
                   textAlign: 'center'
                 }}>{item.nama}</Text>
                 <CustomMarker
-                  color={(chooseMode || pressNodeId || pressId) ? pressNodeId === item?.id ? colors.green : pressId === item?.id && colors.purple : colors.darkBlue}
+                  color={(chooseMode || pressNodeId || pressId) ? pressNodeId === item?.id ? colors.green : pressId === item?.id ? colors.purple : colors.darkBlue : colors.darkBlue}
                 />
               </View>
             </Marker.Animated>
@@ -1338,68 +1386,12 @@ function ObjekWisataScreen({ data, setRegion, handleClosePress, handleSnapItemPr
             />
           )}
         </View>
-
-        {/* {filteredObjekWisata?.map(item => (
-            item?.tipe == 1 &&
-            <Pressable
-              key={item?.id}
-              onPress={() => {
-                // setRegion({
-                //   latitude: item?.latitude,
-                //   longitude: item?.longitude,
-                //   latitudeDelta: 0.002,
-                //   longitudeDelta: 0.002,
-                // });
-                _map.current?.animateToRegion({
-                  latitude: item?.latitude,
-                  longitude: item?.longitude,
-                  latitudeDelta: 0.002,
-                  longitudeDelta: 0.002,
-                }, 1000)
-                // handleClosePress();
-                // handleSnapItemPress(0);
-                setPressid(item?.id)
-                bottomSheetRef.current?.snapToIndex(0)
-              }}
-              onLongPress={() => {
-                setModalVisible(true)
-                setId(item?.id)
-              }}
-            >
-              <View style={styles.itemContainer}>
-                {item?.foto && item?.foto?.length !== 0 ? (
-                  <Image
-                    source={{
-                      uri: item?.foto[0]?.uri,
-                    }}
-                    style={{ width: 50, height: 50, marginRight: 6 }}
-                  />
-                ) : (
-                  <Image
-                    source={{
-                      uri: "https://www.its.ac.id/tmesin/wp-content/uploads/sites/22/2022/07/no-image.png",
-                    }}
-                    style={{ width: 50, height: 50, marginRight: 6 }}
-                  />
-                )}
-                <View style={{
-                  justifyContent: 'center'
-                }}>
-                  <Text style={styles.textJudul}>{item?.nama}</Text>
-                  <Text style={{
-                    fontSize: 13,
-                    color: colors.black,
-                  }}>{item?.alamat ? item?.alamat : "Belum ada alamat"}</Text>
-                </View>
-              </View>
-            </Pressable>
-          ))} */}
       </View>
     );
   }
 }
 
-function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRef, setPressNodeId, _map, setFilteredNode, filteredNode, loading, setLoading, navigation }) {
+function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRef, setPressNodeId, _map, setFilteredNode, filteredNode, loading, setLoading, navigation, dataGraf }) {
   const [searchNode, setSearchNode] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [id, setId] = useState("");
@@ -1412,6 +1404,7 @@ function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRe
         setLoading={setLoading}
         navigation={navigation}
         dataAllNodes={data}
+        dataGraf={dataGraf}
       />
       <View style={{
         flexDirection: 'row',
@@ -1494,42 +1487,6 @@ function NodeScreen({ data, setRegion, setPressid, handleSnapPress, nodeMarkerRe
           />
         )}
       </View>
-      {/* <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
-        {filteredNode?.map(item => (
-          item?.tipe == 2 &&
-          <Pressable
-            key={item?.id}
-            onPress={() => {
-              // setRegion({
-              //   latitude: item?.latitude,
-              //   longitude: item?.longitude,
-              //   latitudeDelta: 0.002,
-              //   longitudeDelta: 0.002,
-              // });
-              _map.current?.animateToRegion({
-                latitude: item?.latitude,
-                longitude: item?.longitude,
-                latitudeDelta: 0.002,
-                longitudeDelta: 0.002,
-              }, 1000)
-              handleSnapPress(0);
-              setPressNodeId(item?.id);
-            }}
-            onLongPress={() => {
-              setModalVisible(true)
-              setId(item?.id)
-            }}
-          >
-            <View style={styles.itemContainer}>
-              <View style={{
-                justifyContent: 'center'
-              }}>
-                <Text style={styles.textJudul}>{item?.nama}</Text>
-              </View>
-            </View>
-          </Pressable>
-        ))}
-      </BottomSheetScrollView> */}
     </View>
   );
 }
@@ -1614,37 +1571,6 @@ function GrafScreen({ data, setRegion, dataNode, handleSnapPress, _map, setPress
           />
         )}
       </View>
-      {/* <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 20, backgroundColor: colors.white }}>
-        {filteredGraph?.map(item => (
-          <Pressable
-            key={item?.id}
-            onPress={() => {
-              // setRegion({
-              //   latitude: item?.region?.latitude,
-              //   longitude: item?.region?.longitude,
-              //   latitudeDelta: item?.region?.latitudeDelta,
-              //   longitudeDelta: item?.region?.longitudeDelta,
-              // });
-              _map.current?.animateToRegion({
-                latitude: item?.region?.latitude,
-                longitude: item?.region?.longitude,
-                latitudeDelta: item?.region?.latitudeDelta,
-                longitudeDelta: item?.region?.longitudeDelta,
-              }, 1000)
-              bottomSheetRef?.current?.close();
-              setPressGraphId(item?.id)
-            }}
-          >
-            <View style={styles.itemContainer}>
-              <View style={{
-                justifyContent: 'center'
-              }}>
-                <Text style={styles.textJudul}>{dataNode?.find(i => i?.id === item?.startNodeId)?.nama} - {dataNode?.find(i => i?.id === item?.finalNodeId)?.nama}</Text>
-              </View>
-            </View>
-          </Pressable>
-        ))}
-      </BottomSheetScrollView> */}
     </View>
   );
 }
@@ -1698,7 +1624,7 @@ const Navigator = ({ dataNode, dataGraf, handleSnapPress, handleClosePress, hand
             )
           }}
         >
-          {(props) => <NodeScreen data={dataNode} setRegion={setRegion} setPressid={setPressid} handleSnapPress={handleSnapPress} nodeMarkerRef={nodeMarkerRef} setPressNodeId={setPressNodeId} _map={_map} setFilteredNode={setFilteredNode} filteredNode={filteredNode} loading={loading} setLoading={setLoading} navigation={navigation} />}
+          {(props) => <NodeScreen data={dataNode} setRegion={setRegion} setPressid={setPressid} handleSnapPress={handleSnapPress} nodeMarkerRef={nodeMarkerRef} setPressNodeId={setPressNodeId} _map={_map} setFilteredNode={setFilteredNode} filteredNode={filteredNode} loading={loading} setLoading={setLoading} navigation={navigation} dataGraf={dataGraf} />}
         </Tab.Screen>
         <Tab.Screen
           name="Sisi"
@@ -1843,7 +1769,7 @@ function ModalLogout({ isVisible, setIsVisible, setLoading, navigation }) {
   )
 }
 
-function ModalNodeLongPress({ isVisible, data, setIsVisible, setLoading, navigation, dataAllNodes }) {
+function ModalNodeLongPress({ isVisible, data, setIsVisible, setLoading, navigation, dataAllNodes, dataGraf }) {
   return (
     <Modal
       isVisible={isVisible}
@@ -1916,16 +1842,34 @@ function ModalNodeLongPress({ isVisible, data, setIsVisible, setLoading, navigat
               justifyContent: "center",
               marginBottom: 10,
             }}
-            onPress={() => {
+            onPress={async () => {
               setLoading(true)
-              firestore().collection('node').doc(data?.id).delete().then(() => {
-                ToastAndroid.show('Berhasil hapus node', ToastAndroid.SHORT)
-              }).catch(() => {
+              try {
+                const connectedEdges = dataGraf?.filter(item => item?.startNodeId === data?.id || item?.finalNodeId === data?.id)
+                console.log("connected egdes", connectedEdges);
+                const deletePromises = connectedEdges.map(item => {
+                  return firestore().collection('graf').doc(item?.id).delete()
+                })
+                await Promise.all(deletePromises)
+                firestore().collection('node').doc(data?.id).delete().then(() => {
+                  ToastAndroid.show('Berhasil hapus node', ToastAndroid.SHORT)
+                }).catch(() => {
+                  ToastAndroid.show('Aksi gagal dilakukan', ToastAndroid.SHORT)
+                })
+              } catch (error) {
                 ToastAndroid.show('Aksi gagal dilakukan', ToastAndroid.SHORT)
-              }).finally(() => {
+              } finally {
                 setIsVisible(false)
                 setLoading(false)
-              })
+              }
+              // firestore().collection('node').doc(data?.id).delete().then(() => {
+              //   ToastAndroid.show('Berhasil hapus node', ToastAndroid.SHORT)
+              // }).catch(() => {
+              //   ToastAndroid.show('Aksi gagal dilakukan', ToastAndroid.SHORT)
+              // }).finally(() => {
+              //   setIsVisible(false)
+              //   setLoading(false)
+              // })
             }}
           >
             <Ionicons
