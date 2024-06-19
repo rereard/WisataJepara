@@ -1036,6 +1036,50 @@ export default function HomeAdmin({ route, navigation }) {
                 </Text>
               </View>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.yellow,
+                borderRadius: 15,
+                alignItems: 'center',
+                paddingVertical: 10,
+                flex: 1,
+                shadowColor: "#000",
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                marginTop: 10
+              }}
+              onPress={() => {
+                navigation.navigate('EditObjekWisata', {
+                  data: dataNode?.find((i => i?.id === pressId))
+                })
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row'
+                }}
+              >
+                <Ionicons
+                  name={"pencil-sharp"}
+                  size={20}
+                  color={colors.white}
+                />
+                <Text
+                  style={{
+                    color: colors.white,
+                    fontSize: 15,
+                    fontWeight: '700',
+                  }}
+                >
+                  {'\t'}Edit
+                </Text>
+              </View>
+            </TouchableOpacity>
             {(dataNode?.find(item => item?.id === pressId)?.foto && dataNode?.find(item => item?.id === pressId)?.foto.length !== 0) && (
               <>
                 <ImageView

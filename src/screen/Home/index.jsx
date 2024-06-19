@@ -77,6 +77,7 @@ export default function Home({ route, navigation }) {
   useEffect(() => {
     if (dataGraf && dataNode) {
       const adjacency = buildGraph(dataNode, dataGraf)
+      console.log("adjacency", adjacency);
       setAdjacencyList(adjacency)
     }
   }, [dataGraf]);
@@ -191,7 +192,7 @@ export default function Home({ route, navigation }) {
         style={{
           position: 'absolute',
           right: '0%',
-          zIndex: 1
+          zIndex: 1,
         }}
         onPress={() => {
           navigation.navigate('Login')
@@ -202,6 +203,50 @@ export default function Home({ route, navigation }) {
           style={{ color: 'rgba(0, 0, 0, 0)', fontSize: 30 }}
         />
       </Pressable>
+      {dijkstraPoly && (
+        <Pressable
+          style={{
+            position: 'absolute',
+            left: '0%',
+            zIndex: 1,
+            padding: 5,
+            backgroundColor: colors.white,
+            borderRadius: 99,
+            margin: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingRight: 10
+          }}
+          onPress={() => {
+            setChooseMode(false)
+            bottomSheetItemRef.current?.snapToIndex(1)
+            setPressNodeId(null)
+            setDijkstraPoly(null)
+            setYenKPoly(null)
+            setMainPoly(null)
+            setJarakAlternatif(null)
+            setCurrentGrafNodes(null)
+            setPressGraphId(null)
+            setRouteTabIndex(0)
+            _map.current?.animateToRegion({
+              latitude: dataNode?.find(item => item?.id === pressId)?.latitude,
+              longitude: dataNode?.find(item => item?.id === pressId)?.longitude,
+              latitudeDelta: 0.003,
+              longitudeDelta: 0.003
+            }, 1000)
+          }}
+        >
+          <Ionicons
+            name={"chevron-back"}
+            style={{ color: colors.darkBlue, fontSize: 30 }}
+          />
+          <Text style={{
+            color: colors.darkBlue
+          }}>
+            Kembali
+          </Text>
+        </Pressable>
+      )}
       <MapView
         ref={_map}
         style={styles.map}
@@ -661,7 +706,11 @@ export default function Home({ route, navigation }) {
               alignItems: 'center',
               justifyContent: "space-between"
             }}>
-              <View>
+              <View
+                style={{
+                  flex: 1
+                }}
+              >
                 <Text style={{
                   fontWeight: '900',
                   color: colors.black,
