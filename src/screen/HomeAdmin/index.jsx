@@ -70,6 +70,7 @@ export default function HomeAdmin({ route, navigation }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [visible, setIsVisible] = useState(false);
   const [outModalVisible, setOutModalVisible] = useState(false)
+  const [isModalVisible, setModalVisible] = useState(false)
   const [region, setRegion] = useState({
     latitude: -6.5811218,
     longitude: 110.6872181,
@@ -328,6 +329,7 @@ export default function HomeAdmin({ route, navigation }) {
             <Marker
               ref={nodeMarkerRef}
               identifier={item?.id}
+              title={pressGraphId ? null : item?.nama}
               key={item?.id}
               coordinate={({
                 latitude: item?.latitude,
@@ -335,6 +337,9 @@ export default function HomeAdmin({ route, navigation }) {
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
               })}
+              onCalloutPress={() => {
+                setModalVisible(true)
+              }}
               tracksViewChanges={false}
               onPress={() => {
                 if (!dijkstraPoly) {
@@ -396,14 +401,14 @@ export default function HomeAdmin({ route, navigation }) {
                       </>
                 ) : (
                   <>
-                    {pressNodeId === item?.id && (
+                    {/* {pressNodeId === item?.id && (
                       <Text style={{
                         color: colors.black,
                         fontWeight: '900',
                         fontSize: 10,
                         textAlign: 'center'
                       }}>{item.nama}</Text>
-                    )}
+                    )} */}
                     <NodeMarker
                       color={(chooseMode || pressNodeId) ? pressNodeId === item?.id ? colors.green : colors.black : colors.black}
                     />
@@ -492,6 +497,15 @@ export default function HomeAdmin({ route, navigation }) {
           />
         )}
       </MapView>
+      <ModalNodeLongPress
+        isVisible={isModalVisible}
+        setIsVisible={setModalVisible}
+        data={pressNodeId !== "" && dataNode?.find((i => i?.id === pressNodeId))}
+        setLoading={setLoading}
+        navigation={navigation}
+        dataAllNodes={dataNode}
+        dataGraf={dataGraf}
+      />
       <Spinner
         visible={loading}
         textContent="Loading..."

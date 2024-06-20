@@ -80,56 +80,70 @@ export default function EditNode({ route, navigation }) {
             setRegionMarker(region)
           }}
           customMapStyle={[
-            {
-              "featureType": "administrative",
-              "elementType": "geometry",
-              "stylers": [
-                {
-                  "visibility": "off"
-                }
-              ]
-            },
-            {
-              "featureType": "poi",
-              "stylers": [
-                {
-                  "visibility": "off"
-                }
-              ]
-            },
-            {
-              "featureType": "road",
-              "elementType": "labels.icon",
-              "stylers": [
-                {
-                  "visibility": "off"
-                }
-              ]
-            },
-            {
-              "featureType": "transit",
-              "stylers": [
-                {
-                  "visibility": "off"
-                }
-              ]
-            }
+            [
+              {
+                "featureType": "poi.business",
+                "stylers": [
+                  {
+                    "visibility": "off"
+                  }
+                ]
+              },
+              {
+                "featureType": "poi.park",
+                "elementType": "labels.text",
+                "stylers": [
+                  {
+                    "visibility": "off"
+                  }
+                ]
+              }
+            ]
           ]}
         >
           {dataAllNodes?.map(item => (
-            item?.tipe == 2 &&
-            <Marker
-              identifier={item?.id}
-              key={item?.id}
-              title={item?.nama}
-              coordinate={({
-                latitude: item?.latitude,
-                longitude: item?.longitude,
-              })}
-              tracksViewChanges={false}
-            >
-              <NodeMarker />
-            </Marker>
+            item?.tipe == 2 ?
+              <Marker
+                identifier={item?.id}
+                key={item?.id}
+                title={item?.nama}
+                coordinate={({
+                  latitude: item?.latitude,
+                  longitude: item?.longitude,
+                })}
+                tracksViewChanges={false}
+              >
+                <NodeMarker />
+              </Marker>
+              :
+              <Marker
+                identifier={item?.id}
+                key={item?.id}
+                coordinate={({
+                  latitude: item?.latitude,
+                  longitude: item?.longitude,
+                })}
+                tracksViewChanges={false}
+              >
+                <View style={{
+                  width: 100,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Text style={{
+                    color: colors.black,
+                    fontWeight: '900',
+                    fontSize: 10,
+                    textAlign: 'center'
+                  }}>{item?.nama}</Text>
+                  <Ionicons name={'location-sharp'}
+                    style={{
+                      fontSize: 40,
+                      color: colors.darkBlue
+                    }}
+                  />
+                </View>
+              </Marker>
           ))}
         </MapView>
         <View
